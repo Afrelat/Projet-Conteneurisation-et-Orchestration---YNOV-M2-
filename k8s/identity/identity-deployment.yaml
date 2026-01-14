@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: identity-api
+  namespace: projet-apps
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: identity-api
+  template:
+    metadata:
+      labels:
+        app: identity-api
+    spec:
+      affinity:
+        podAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values: ["redis"] # Affinité avec Redis
+              topologyKey: "kubernetes.io/hostname"
+      containers:
+      - name: identity-api
+        image: mcr.microsoft.com/dotnet/samples:aspnetapp
+        imagePullPolicy: Always
+        env:
+        - name: RedisHost
+          value: "user-data:6379"
+        - name: HostRabbitmq
+          value: "rabbitmq"
+        resources:
+          requests: { cpu: "500m", memory: "500Mi" }
+          limits: { cpu: "1000m", memory: "1500Mi" }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: identity-api
+  namespace: projet-apps
+spec:
+  ports: [{ port: 80 }]
+  selector: { app: identity-api }

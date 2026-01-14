@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: user-data
+  namespace: projet-apps
+spec:
+  serviceName: "user-data"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:6-alpine
+        ports:
+        - containerPort: 6379
+        resources:
+          requests:
+            cpu: "4m"
+            memory: "500Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-data # Nom DNS attendu par identity.api
+  namespace: projet-apps
+spec:
+  ports:
+  - port: 6379
+  selector:
+    app: redis

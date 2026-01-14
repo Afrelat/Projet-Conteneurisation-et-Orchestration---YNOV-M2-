@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: applicants-api
+  namespace: projet-apps # <--- À ajouter ici
+  labels:
+    app: applicants-api
+    tier: api
+spec:
+  replicas: 1 # Peut être augmenté par le HPA plus tard
+  selector:
+    matchLabels:
+      app: applicants-api
+  template:
+    metadata:
+      labels:
+        app: applicants-api
+    spec:
+      # --- AFFINITÉ (Demandée pour la performance) ---
+      affinity:
+        podAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - sql # Tente de se placer sur le même noeud que sql-data
+              topologyKey: "kubernetes.io/hostname"
+      
+      containers:
+      - name: applicants-api
+        image: mcr.microsoft.com/dotnet/samples:aspnetapp
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80
+        
+        # --- VARIABLES D'ENVIRONNEMENT (Issues du Docker Compose) ---
+        env:
+        - name: ConnectionString
+          value: "Server=sql-data;User=sa;Password=Pass@word;Database=dotnetgigs.applicants;"
+        - name: HostRabbitmq
+          value: "rabbitmq"
+        
+        # --- RESSOURCES (Strictement imposées par le sujet) ---
+        resources:
+          requests:
+            cpu: "500m"  # Équivalent à 0.5 CPU
+            memory: "500Mi"
+          limits:
+            cpu: "1000m" # Équivalent à 1 CPU
+            memory: "1500Mi"
+        
+        # --- BILAN DE SANTÉ (Sondes demandées) ---
+        livenessProbe:
+          httpGet:
+            path: / # À adapter selon l'endpoint de santé réel de l'app
+            port: 80
+          initialDelaySeconds: 30 # Temps pour laisser .NET démarrer
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 15
+          periodSeconds: 10
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: applicants-api # Nom DNS utilisé par le service Web
+  namespace: projet-apps # <--- À ajouter ici
+spec:
+  type: ClusterIP # Invisible de l'extérieur (Sécurité)
+  selector:
+    app: applicants-api
+  ports:
+  - port: 80
+    targetPort: 80

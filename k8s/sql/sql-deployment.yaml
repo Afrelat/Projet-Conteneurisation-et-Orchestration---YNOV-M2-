@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: sql
+  namespace: projet-apps # <--- À ajouter ici
+spec:
+  serviceName: sql-data # Doit correspondre au nom du service
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sql
+  template:
+    metadata:
+      labels:
+        app: sql
+    spec:
+      containers:
+        - name: sql
+          image: mcr.microsoft.com/mssql/server:2019-latest
+          # Changez Never par IfNotPresent pour Azure ou un cluster distant
+          # imagePullPolicy: IfNotPresent 
+          ports:
+            - containerPort: 1433
+          env:
+            - name: ACCEPT_EULA
+              value: "Y"
+            - name: SA_PASSWORD
+              value: "Pass@word"
+          resources: # OBLIGATOIRE selon le sujet
+            requests:
+              cpu: "100m"
+              memory: "500Mi"
+            limits:
+              cpu: "500m"
+              memory: "1000Mi"
+          volumeMounts:
+            - name: sql-storage
+              mountPath: /var/opt/mssql
+  volumeClaimTemplates:
+    - metadata:
+        name: sql-storage
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 5Gi

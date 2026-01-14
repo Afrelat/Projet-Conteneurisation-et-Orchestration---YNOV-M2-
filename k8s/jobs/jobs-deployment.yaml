@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jobs-api
+  namespace: projet-apps
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jobs-api
+  template:
+    metadata:
+      labels:
+        app: jobs-api
+    spec:
+      affinity:
+        podAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values: ["sql"] # Affinité avec SQL Server
+              topologyKey: "kubernetes.io/hostname"
+      containers:
+      - name: jobs-api
+        image: mcr.microsoft.com/dotnet/samples:aspnetapp
+        imagePullPolicy: Always
+        env:
+        - name: ConnectionString
+          value: "Server=sql-data;User=sa;Password=Pass@word;Database=dotnetgigs.jobs;"
+        - name: HostRabbitmq
+          value: "rabbitmq"
+        resources:
+          requests: { cpu: "500m", memory: "500Mi" }
+          limits: { cpu: "1000m", memory: "1500Mi" }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jobs-api
+  namespace: projet-apps
+spec:
+  ports: [{ port: 80 }]
+  selector: { app: jobs-api }
