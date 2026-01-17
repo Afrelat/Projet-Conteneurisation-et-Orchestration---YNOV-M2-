@@ -22,20 +22,38 @@ spec:
                 matchExpressions:
                 - key: app
                   operator: In
-                  values: ["sql"] # Affinité avec SQL Server
+                  values: ["sql"]
               topologyKey: "kubernetes.io/hostname"
       containers:
       - name: jobs-api
         image: mcr.microsoft.com/dotnet/samples:aspnetapp
         imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
         env:
+        # --- FUSION DES VARIABLES ---
+        - name: LOGSTASH_URL
+          value: "logstash:5044"
         - name: ConnectionString
           value: "Server=sql-data;User=sa;Password=Pass@word;Database=dotnetgigs.jobs;"
         - name: HostRabbitmq
           value: "rabbitmq"
+        - name: ASPNETCORE_URLS
+          value: "http://+:8080"
+        # ---------------------------
         resources:
           requests: { cpu: "500m", memory: "500Mi" }
           limits: { cpu: "1000m", memory: "1500Mi" }
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 15
 ---
 apiVersion: v1
 kind: Service
@@ -43,5 +61,8 @@ metadata:
   name: jobs-api
   namespace: projet-apps
 spec:
-  ports: [{ port: 80 }]
-  selector: { app: jobs-api }
+  ports: 
+  - port: 80
+    targetPort: 8080
+  selector: 
+    app: jobs-api

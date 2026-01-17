@@ -1,10 +1,40 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: web-content
+  namespace: projet-apps
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Projet Architecture - Daniel</title>
+        <style>
+            body { font-family: 'Segoe UI', sans-serif; background: #121212; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+            .card { background: #1e1e1e; padding: 2rem; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center; border: 1px solid #333; }
+            h1 { color: #00e676; margin-bottom: 0.5rem; }
+            p { color: #aaa; }
+            .status { display: inline-block; padding: 5px 15px; background: #00e67622; color: #00e676; border-radius: 20px; font-size: 0.8rem; border: 1px solid #00e676; }
+        </style>
+    </head>
+    <body>
+        <div class="card">
+            <h1>Architecture Microservices</h1>
+            <p>Déploiement Kubernetes de Daniel</p>
+            <div class="status">● Stack ELK & APIs Opérationnelles</div>
+        </div>
+    </body>
+    </html>
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: webmvc
   namespace: projet-apps
 spec:
-  replicas: 1 # Sera géré par le HPA plus tard
+  replicas: 1
   selector:
     matchLabels:
       app: webmvc
@@ -13,7 +43,6 @@ spec:
       labels:
         app: webmvc
     spec:
-      # --- AFFINITÉ (Web proche de Jobs et Applicants) ---
       affinity:
         podAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -29,9 +58,11 @@ spec:
       - name: webmvc
         image: nginx:alpine
         imagePullPolicy: Always
+        env:
+        - name: LOGSTASH_URL
+          value: "logstash:5044"
         ports:
         - containerPort: 80
-        # --- RESSOURCES (Strictement imposées par le sujet) ---
         resources:
           requests:
             cpu: "4m"
@@ -39,7 +70,12 @@ spec:
           limits:
             cpu: "1000m"
             memory: "2000Mi"
-        # --- SONDES DE SANTÉ ---
+        # --- INJECTION DU SITE VITRINE ---
+        volumeMounts:
+        - name: html-volume
+          mountPath: /usr/share/nginx/html/index.html
+          subPath: index.html
+        # ---------------------------------
         livenessProbe:
           httpGet:
             path: /
@@ -50,6 +86,10 @@ spec:
             path: /
             port: 80
           initialDelaySeconds: 15
+      volumes:
+      - name: html-volume
+        configMap:
+          name: web-content
 ---
 apiVersion: v1
 kind: Service
@@ -57,7 +97,7 @@ metadata:
   name: webmvc
   namespace: projet-apps
 spec:
-  type: ClusterIP # Sera exposé via l'Ingress (Rôle 3)
+  type: ClusterIP
   ports:
   - port: 80
     targetPort: 80

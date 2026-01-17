@@ -22,20 +22,36 @@ spec:
                 matchExpressions:
                 - key: app
                   operator: In
-                  values: ["redis"] # Affinité avec Redis
+                  values: ["redis"]
               topologyKey: "kubernetes.io/hostname"
       containers:
       - name: identity-api
         image: mcr.microsoft.com/dotnet/samples:aspnetapp
         imagePullPolicy: Always
+        ports:
+        - containerPort: 8080 # Port standard de l'image sample .NET
         env:
+        - name: LOGSTASH_URL
+          value: "logstash:5044"
         - name: RedisHost
-          value: "user-data:6379"
+          value: "redis:6379"  # Corrigé : pointe vers le service redis
         - name: HostRabbitmq
           value: "rabbitmq"
+        - name: ASPNETCORE_URLS
+          value: "http://+:8080"
         resources:
           requests: { cpu: "500m", memory: "500Mi" }
           limits: { cpu: "1000m", memory: "1500Mi" }
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 15
 ---
 apiVersion: v1
 kind: Service
@@ -43,5 +59,8 @@ metadata:
   name: identity-api
   namespace: projet-apps
 spec:
-  ports: [{ port: 80 }]
-  selector: { app: identity-api }
+  ports: 
+  - port: 80
+    targetPort: 8080 # Redirige le port 80 vers le 8080 du Pod
+  selector: 
+    app: identity-api
