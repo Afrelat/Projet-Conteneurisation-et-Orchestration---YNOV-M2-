@@ -65,7 +65,7 @@ Write-Host "[5/5] Ouverture des accès sur votre navigateur..." -ForegroundColor
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "kubectl port-forward service/webmvc 8080:80 -n $NAMESPACE"
 
 # Identity API -> http://localhost:8081
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "kubectl port-forward service/identity-api 8081:8080 -n $NAMESPACE"
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "kubectl port-forward service/identity-api 8081:80 -n $NAMESPACE"
 
 # Jobs API -> http://localhost:8082
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "kubectl port-forward service/jobs-api 8082:80 -n $NAMESPACE"
