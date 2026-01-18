@@ -34,14 +34,18 @@ kubectl run init-elk-flux --image=busybox -n $NAMESPACE --rm -i --restart=Never 
 Write-Host "ELK est maintenant prêt à recevoir les logs des microservices." -ForegroundColor Green
 
 # 3. INFRASTRUCTURES DE DONNÉES
+
 Write-Host "`n[3/5] Déploiement des bases de données et bus..." -ForegroundColor Yellow
 kubectl apply -f $SQL_PATH -n $NAMESPACE
 kubectl apply -f $REDIS_PATH -n $NAMESPACE
 kubectl apply -f $RABBIT_PATH -n $NAMESPACE
 
-Write-Host "Attente de la disponibilité de SQL et RabbitMQ..." -ForegroundColor Gray
-kubectl wait --for=condition=ready pod -l app=sql -n $NAMESPACE --timeout=90s
+Write-Host "Attente de la disponibilité de SQL, Redis et RabbitMQ..." -ForegroundColor Gray
+# CORRECTION : Le label est app=sql-data et non app=sql
+kubectl wait --for=condition=ready pod -l app=sql-data -n $NAMESPACE --timeout=120s
+kubectl wait --for=condition=ready pod -l app=redis -n $NAMESPACE --timeout=90s
 kubectl wait --for=condition=ready pod -l app=rabbitmq -n $NAMESPACE --timeout=90s
+
 
 # 4. MICROSERVICES ET WEB (Ils pourront logger dès le démarrage)
 Write-Host "`n[4/5] Déploiement des microservices API et Frontend..." -ForegroundColor Yellow
@@ -54,17 +58,23 @@ Write-Host "Finalisation du démarrage des applications..." -ForegroundColor Gra
 kubectl wait --for=condition=ready pod -l app=applicants-api -n $NAMESPACE --timeout=120s
 kubectl wait --for=condition=ready pod -l app=webmvc -n $NAMESPACE --timeout=120s
 
-# 5. TUNNELS (Ports corrigés selon les standards de service)
-Write-Host "`n[5/5] Ouverture des tunnels d'accès..." -ForegroundColor Yellow
+# 5. TUNNELS AUTOMATIQUES (Ports Windows uniques)
+Write-Host "[5/5] Ouverture des accès sur votre navigateur..." -ForegroundColor Green
 
-# On mappe le port 80 du service web vers le 8080 local
+# Web MVC -> http://localhost:8080
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "kubectl port-forward service/webmvc 8080:80 -n $NAMESPACE"
 
-# On mappe le port 5601 de Kibana
+# Identity API -> http://localhost:8081
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "kubectl port-forward service/identity-api 8081:8080 -n $NAMESPACE"
+
+# Jobs API -> http://localhost:8082
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "kubectl port-forward service/jobs-api 8082:80 -n $NAMESPACE"
+
+# Applicants API -> http://localhost:8083
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "kubectl port-forward service/applicants-api 8083:80 -n $NAMESPACE"
+
+# Kibana -> http://localhost:5601
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "kubectl port-forward service/kibana 5601:5601 -n $NAMESPACE"
 
-# On mappe le port 80 du service API vers le 8081 local (Vérifiez si votre service API est sur le port 80 ou 8080)
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "kubectl port-forward service/applicants-api 8081:80 -n $NAMESPACE"
-
-Write-Host "`n[SUCCÈS] ELK a été déployé en premier. Tout est opérationnel." -ForegroundColor Green
+Write-Host "`nPROJET PRÊT !" -ForegroundColor Green
 kubectl get pods -n $NAMESPACE

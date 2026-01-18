@@ -13,47 +13,30 @@ spec:
       labels:
         app: jobs-api
     spec:
-      affinity:
-        podAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                - key: app
-                  operator: In
-                  values: ["sql"]
-              topologyKey: "kubernetes.io/hostname"
       containers:
       - name: jobs-api
-        image: mcr.microsoft.com/dotnet/samples:aspnetapp
-        imagePullPolicy: Always
-        ports:
-        - containerPort: 8080
+        image: warshall/jobs-api:v1.0.0
         env:
-        # --- FUSION DES VARIABLES ---
-        - name: LOGSTASH_URL
-          value: "logstash:5044"
         - name: ConnectionString
           value: "Server=sql-data;User=sa;Password=Pass@word;Database=dotnetgigs.jobs;"
+        - name: ConnectionStringRedis
+          value: "redis:6379"
         - name: HostRabbitmq
           value: "rabbitmq"
         - name: ASPNETCORE_URLS
           value: "http://+:8080"
-        # ---------------------------
-        resources:
-          requests: { cpu: "500m", memory: "500Mi" }
-          limits: { cpu: "1000m", memory: "1500Mi" }
+        ports:
+        - containerPort: 8080
         livenessProbe:
           httpGet:
-            path: /
+            path: /hc
             port: 8080
-          initialDelaySeconds: 30
+          initialDelaySeconds: 120
         readinessProbe:
           httpGet:
-            path: /
+            path: /hc
             port: 8080
-          initialDelaySeconds: 15
+          initialDelaySeconds: 60
 ---
 apiVersion: v1
 kind: Service
@@ -61,8 +44,8 @@ metadata:
   name: jobs-api
   namespace: projet-apps
 spec:
-  ports: 
+  ports:
   - port: 80
     targetPort: 8080
-  selector: 
+  selector:
     app: jobs-api

@@ -1,12 +1,12 @@
 ﻿FROM mcr.microsoft.com/dotnet/core/aspnet:2.1-stretch-slim AS base
 WORKDIR /app
 EXPOSE 80
-EXPOSE 443
 
 FROM mcr.microsoft.com/dotnet/core/sdk:2.1-stretch AS build
 WORKDIR /src
-COPY "Services/Applicants.Api" "Services/Applicants.Api/"
-COPY "Foundation/Events" "Foundation/Events/"
+# On copie d'abord les .csproj pour optimiser le cache Docker
+COPY ["Services/Applicants.Api/applicants.api.csproj", "Services/Applicants.Api/"]
+COPY ["Foundation/Events/Events.csproj", "Foundation/Events/"] 
 
 RUN dotnet restore "Services/Applicants.Api/applicants.api.csproj"
 COPY . .

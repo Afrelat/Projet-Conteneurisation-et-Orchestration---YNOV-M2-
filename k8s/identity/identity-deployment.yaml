@@ -13,45 +13,32 @@ spec:
       labels:
         app: identity-api
     spec:
-      affinity:
-        podAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                - key: app
-                  operator: In
-                  values: ["redis"]
-              topologyKey: "kubernetes.io/hostname"
       containers:
       - name: identity-api
-        image: mcr.microsoft.com/dotnet/samples:aspnetapp
-        imagePullPolicy: Always
-        ports:
-        - containerPort: 8080 # Port standard de l'image sample .NET
+        image: warshall/identity-api:v1.0.0
         env:
-        - name: LOGSTASH_URL
-          value: "logstash:5044"
-        - name: RedisHost
-          value: "redis:6379"  # Corrigé : pointe vers le service redis
+        - name: ConnectionString
+          value: "redis:6379"
+        - name: RedisConnectionString
+          value: "redis:6379"
+        - name: ConnectionStringDatabase
+          value: "Server=sql-data;Database=Microsoft.eShopOnContainers.Services.IdentityDb;User Id=sa;Password=Pass@word;"
         - name: HostRabbitmq
           value: "rabbitmq"
         - name: ASPNETCORE_URLS
-          value: "http://+:8080"
-        resources:
-          requests: { cpu: "500m", memory: "500Mi" }
-          limits: { cpu: "1000m", memory: "1500Mi" }
+          value: "http://+:80"
+        ports:
+        - containerPort: 80
         livenessProbe:
           httpGet:
-            path: /
-            port: 8080
-          initialDelaySeconds: 30
+            path: /hc
+            port: 80
+          initialDelaySeconds: 120
         readinessProbe:
           httpGet:
-            path: /
-            port: 8080
-          initialDelaySeconds: 15
+            path: /hc
+            port: 80
+          initialDelaySeconds: 60
 ---
 apiVersion: v1
 kind: Service
@@ -59,8 +46,8 @@ metadata:
   name: identity-api
   namespace: projet-apps
 spec:
-  ports: 
+  ports:
   - port: 80
-    targetPort: 8080 # Redirige le port 80 vers le 8080 du Pod
-  selector: 
+    targetPort: 80
+  selector:
     app: identity-api

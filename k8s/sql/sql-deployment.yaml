@@ -1,24 +1,23 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: sql
-  namespace: projet-apps # <--- À ajouter ici
+  name: sql-data
+  namespace: projet-apps
 spec:
-  serviceName: sql-data # Doit correspondre au nom du service
+  serviceName: sql-data
   replicas: 1
   selector:
     matchLabels:
-      app: sql
+      app: sql-data
   template:
     metadata:
       labels:
-        app: sql
+        app: sql-data
     spec:
       containers:
-        - name: sql
-          image: mcr.microsoft.com/mssql/server:2019-latest
-          # Changez Never par IfNotPresent pour Azure ou un cluster distant
-          # imagePullPolicy: IfNotPresent 
+        - name: sql-data
+          image: warshall/sql-data:v1.0.0 
+          imagePullPolicy: Always
           ports:
             - containerPort: 1433
           env:
@@ -26,13 +25,13 @@ spec:
               value: "Y"
             - name: SA_PASSWORD
               value: "Pass@word"
-          resources: # OBLIGATOIRE selon le sujet
+          resources: 
             requests:
-              cpu: "100m"
-              memory: "500Mi"
-            limits:
               cpu: "500m"
-              memory: "1000Mi"
+              memory: "1500Mi"
+            limits:
+              cpu: "1000m"
+              memory: "2000Mi" 
           volumeMounts:
             - name: sql-storage
               mountPath: /var/opt/mssql
@@ -44,3 +43,16 @@ spec:
         resources:
           requests:
             storage: 5Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sql-data # NOM UNIQUE ET CORRECT
+  namespace: projet-apps
+spec:
+  type: ClusterIP
+  ports:
+    - port: 1433
+      targetPort: 1433
+  selector:
+    app: sql-data # DOIT CORRESPONDRE AU LABEL DU STATEFULSET

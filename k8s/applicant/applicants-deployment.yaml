@@ -3,9 +3,6 @@ kind: Deployment
 metadata:
   name: applicants-api
   namespace: projet-apps
-  labels:
-    app: applicants-api
-    tier: api
 spec:
   replicas: 1
   selector:
@@ -16,54 +13,30 @@ spec:
       labels:
         app: applicants-api
     spec:
-      affinity:
-        podAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                - key: app
-                  operator: In
-                  values:
-                  - sql
-              topologyKey: "kubernetes.io/hostname"
       containers:
       - name: applicants-api
-        image: mcr.microsoft.com/dotnet/samples:aspnetapp
-        imagePullPolicy: Always
-        ports:
-        - containerPort: 8080 # Port interne de l'image Microsoft
+        image: warshall/applicants-api:v1.0.0
         env:
-        # --- TOUTES LES VARIABLES FUSIONNÉES ICI ---
-        - name: LOGSTASH_URL
-          value: "logstash:5044"
         - name: ConnectionString
           value: "Server=sql-data;User=sa;Password=Pass@word;Database=dotnetgigs.applicants;"
+        - name: ConnectionStringRedis
+          value: "redis:6379"
         - name: HostRabbitmq
           value: "rabbitmq"
         - name: ASPNETCORE_URLS
           value: "http://+:8080"
-        # ------------------------------------------
-        resources:
-          requests:
-            cpu: "500m"
-            memory: "500Mi"
-          limits:
-            cpu: "1000m"
-            memory: "1500Mi"
+        ports:
+        - containerPort: 8080
         livenessProbe:
           httpGet:
-            path: /
-            port: 8080 # Corrigé en 8080
-          initialDelaySeconds: 30
-          periodSeconds: 20
+            path: /hc
+            port: 8080
+          initialDelaySeconds: 120
         readinessProbe:
           httpGet:
-            path: /
-            port: 8080 # Corrigé en 8080
-          initialDelaySeconds: 15
-          periodSeconds: 10
+            path: /hc
+            port: 8080
+          initialDelaySeconds: 60
 ---
 apiVersion: v1
 kind: Service
@@ -71,9 +44,8 @@ metadata:
   name: applicants-api
   namespace: projet-apps
 spec:
-  type: ClusterIP
+  ports:
+  - port: 80       # Port utilisé par les autres services
+    targetPort: 8080 # Port réel de l'application
   selector:
     app: applicants-api
-  ports:
-  - port: 80       # Port exposé pour les autres services (Web)
-    targetPort: 8080 # Port réel vers le Pod

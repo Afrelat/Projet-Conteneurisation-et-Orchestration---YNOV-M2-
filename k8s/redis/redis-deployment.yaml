@@ -1,10 +1,10 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: user-data
+  name: redis # Changé de user-data à redis
   namespace: projet-apps
 spec:
-  serviceName: "user-data"
+  serviceName: "redis"
   replicas: 1
   selector:
     matchLabels:
@@ -21,16 +21,17 @@ spec:
         - containerPort: 6379
         resources:
           requests:
-            cpu: "4m"
-            memory: "500Mi"
+            cpu: "100m"
+            memory: "100Mi" # Réduit car 500Mi est beaucoup pour un Redis vide
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: user-data # Nom DNS attendu par identity.api
+  name: redis # NOM CRUCIAL : Vos APIs cherchent "redis"
   namespace: projet-apps
 spec:
   ports:
   - port: 6379
+    targetPort: 6379
   selector:
     app: redis
