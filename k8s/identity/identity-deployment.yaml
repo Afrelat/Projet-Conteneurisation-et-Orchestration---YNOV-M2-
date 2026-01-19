@@ -13,29 +13,32 @@ spec:
       labels:
         app: identity-api
     spec:
-      affinity:
-        podAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                - key: app
-                  operator: In
-                  values: ["redis"] # Affinité avec Redis
-              topologyKey: "kubernetes.io/hostname"
       containers:
       - name: identity-api
-        image: mcr.microsoft.com/dotnet/samples:aspnetapp
-        imagePullPolicy: Always
+        image: warshall/identity-api:v1.0.0
         env:
-        - name: RedisHost
-          value: "user-data:6379"
+        - name: ConnectionString
+          value: "redis:6379"
+        - name: RedisConnectionString
+          value: "redis:6379"
+        - name: ConnectionStringDatabase
+          value: "Server=sql-data;Database=Microsoft.eShopOnContainers.Services.IdentityDb;User Id=sa;Password=Pass@word;"
         - name: HostRabbitmq
           value: "rabbitmq"
-        resources:
-          requests: { cpu: "500m", memory: "500Mi" }
-          limits: { cpu: "1000m", memory: "1500Mi" }
+        - name: ASPNETCORE_URLS
+          value: "http://+:8080"
+        ports:
+        - containerPort: 80
+        livenessProbe:
+          httpGet:
+            path: /hc
+            port: 80
+          initialDelaySeconds: 120
+        readinessProbe:
+          httpGet:
+            path: /hc
+            port: 80
+          initialDelaySeconds: 60
 ---
 apiVersion: v1
 kind: Service
@@ -43,5 +46,8 @@ metadata:
   name: identity-api
   namespace: projet-apps
 spec:
-  ports: [{ port: 80 }]
-  selector: { app: identity-api }
+  ports:
+  - port: 80
+    targetPort: 80
+  selector:
+    app: identity-api
