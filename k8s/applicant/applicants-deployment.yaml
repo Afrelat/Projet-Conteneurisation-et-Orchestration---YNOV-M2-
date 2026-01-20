@@ -13,6 +13,20 @@ spec:
       labels:
         app: applicants-api
     spec:
+      # --- AJOUT DE L'AFFINITÉ ---
+      # Applicants API doit être proche de la base SQL (sql-data)
+      affinity:
+        podAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - sql-data
+              topologyKey: "kubernetes.io/hostname"
       containers:
       - name: applicants-api
         image: warshall/applicants-api:v1.0.0
@@ -27,6 +41,14 @@ spec:
           value: "http://+:8080"
         ports:
         - containerPort: 8080
+        # --- AJOUT DES LIMITES DE PERF ---
+        resources:
+          requests:
+            cpu: "0.5"
+            memory: "500Mi"
+          limits:
+            cpu: "1"
+            memory: "1500Mi"
         livenessProbe:
           httpGet:
             path: /hc
@@ -45,7 +67,58 @@ metadata:
   namespace: projet-apps
 spec:
   ports:
-  - port: 80       # Port utilisé par les autres services
-    targetPort: 8080 # Port réel de l'application
+  - port: 80       # Port exposé pour le WebMVC
+    targetPort: 8080 # Port réel de l'application .NET
   selector:
     app: applicants-api
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: applicants-api
+#   namespace: projet-apps
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       app: applicants-api
+#   template:
+#     metadata:
+#       labels:
+#         app: applicants-api
+#     spec:
+#       containers:
+#       - name: applicants-api
+#         image: warshall/applicants-api:v1.0.0
+#         env:
+#         - name: ConnectionString
+#           value: "Server=sql-data;User=sa;Password=Pass@word;Database=dotnetgigs.applicants;"
+#         - name: ConnectionStringRedis
+#           value: "redis:6379"
+#         - name: HostRabbitmq
+#           value: "rabbitmq"
+#         - name: ASPNETCORE_URLS
+#           value: "http://+:8080"
+#         ports:
+#         - containerPort: 8080
+#         livenessProbe:
+#           httpGet:
+#             path: /hc
+#             port: 8080
+#           initialDelaySeconds: 120
+#         readinessProbe:
+#           httpGet:
+#             path: /hc
+#             port: 8080
+#           initialDelaySeconds: 60
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: applicants-api
+#   namespace: projet-apps
+# spec:
+#   ports:
+#   - port: 80       # Port utilisé par les autres services
+#     targetPort: 8080 # Port réel de l'application
+#   selector:
+#     app: applicants-api

@@ -13,6 +13,20 @@ spec:
       labels:
         app: jobs-api
     spec:
+      # --- AJOUT DE L'AFFINITÉ ---
+      # Jobs API doit être proche de la base de données SQL
+      affinity:
+        podAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - sql-data
+              topologyKey: "kubernetes.io/hostname"
       containers:
       - name: jobs-api
         image: warshall/jobs-api:v1.0.0
@@ -27,6 +41,14 @@ spec:
           value: "http://+:8080"
         ports:
         - containerPort: 8080
+        # --- AJOUT DES LIMITES DE PERF ---
+        resources:
+          requests:
+            cpu: "0.5"
+            memory: "500Mi"
+          limits:
+            cpu: "1"
+            memory: "1500Mi"
         livenessProbe:
           httpGet:
             path: /hc
@@ -49,3 +71,54 @@ spec:
     targetPort: 8080
   selector:
     app: jobs-api
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: jobs-api
+#   namespace: projet-apps
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       app: jobs-api
+#   template:
+#     metadata:
+#       labels:
+#         app: jobs-api
+#     spec:
+#       containers:
+#       - name: jobs-api
+#         image: warshall/jobs-api:v1.0.0
+#         env:
+#         - name: ConnectionString
+#           value: "Server=sql-data;User=sa;Password=Pass@word;Database=dotnetgigs.jobs;"
+#         - name: ConnectionStringRedis
+#           value: "redis:6379"
+#         - name: HostRabbitmq
+#           value: "rabbitmq"
+#         - name: ASPNETCORE_URLS
+#           value: "http://+:8080"
+#         ports:
+#         - containerPort: 8080
+#         livenessProbe:
+#           httpGet:
+#             path: /hc
+#             port: 8080
+#           initialDelaySeconds: 120
+#         readinessProbe:
+#           httpGet:
+#             path: /hc
+#             port: 8080
+#           initialDelaySeconds: 60
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: jobs-api
+#   namespace: projet-apps
+# spec:
+#   ports:
+#   - port: 80
+#     targetPort: 8080
+#   selector:
+#     app: jobs-api

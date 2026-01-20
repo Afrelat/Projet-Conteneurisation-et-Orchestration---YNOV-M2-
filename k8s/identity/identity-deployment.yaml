@@ -13,6 +13,20 @@ spec:
       labels:
         app: identity-api
     spec:
+      # --- AJOUT DE L'AFFINITÉ ---
+      # Identity API doit être proche de user.data
+      affinity:
+        podAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - user.data
+              topologyKey: "kubernetes.io/hostname"
       containers:
       - name: identity-api
         image: warshall/identity-api:v1.0.0
@@ -26,9 +40,17 @@ spec:
         - name: HostRabbitmq
           value: "rabbitmq"
         - name: ASPNETCORE_URLS
-          value: "http://+:8080"
+          value: "http://+:80"
         ports:
         - containerPort: 80
+        # --- AJOUT DES LIMITES DE PERF ---
+        resources:
+          requests:
+            cpu: "0.5"
+            memory: "500Mi"
+          limits:
+            cpu: "1"
+            memory: "1500Mi"
         livenessProbe:
           httpGet:
             path: /hc
@@ -51,3 +73,56 @@ spec:
     targetPort: 80
   selector:
     app: identity-api
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: identity-api
+#   namespace: projet-apps
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       app: identity-api
+#   template:
+#     metadata:
+#       labels:
+#         app: identity-api
+#     spec:
+#       containers:
+#       - name: identity-api
+#         image: warshall/identity-api:v1.0.0
+#         env:
+#         - name: ConnectionString
+#           value: "redis:6379"
+#         - name: RedisConnectionString
+#           value: "redis:6379"
+#         - name: ConnectionStringDatabase
+#           value: "Server=sql-data;Database=Microsoft.eShopOnContainers.Services.IdentityDb;User Id=sa;Password=Pass@word;"
+#         - name: HostRabbitmq
+#           value: "rabbitmq"
+#         - name: ASPNETCORE_URLS
+#           value: "http://+:8080"
+#         ports:
+#         - containerPort: 80
+#         livenessProbe:
+#           httpGet:
+#             path: /hc
+#             port: 80
+#           initialDelaySeconds: 120
+#         readinessProbe:
+#           httpGet:
+#             path: /hc
+#             port: 80
+#           initialDelaySeconds: 60
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: identity-api
+#   namespace: projet-apps
+# spec:
+#   ports:
+#   - port: 80
+#     targetPort: 80
+#   selector:
+#     app: identity-api
