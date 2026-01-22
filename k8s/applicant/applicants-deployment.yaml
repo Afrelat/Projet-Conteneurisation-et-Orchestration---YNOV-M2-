@@ -13,8 +13,6 @@ spec:
       labels:
         app: applicants-api
     spec:
-      # --- AJOUT DE L'AFFINITÉ ---
-      # Applicants API doit être proche de la base SQL (sql-data)
       affinity:
         podAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -31,17 +29,16 @@ spec:
       - name: applicants-api
         image: warshall/applicants-api:v1.0.0
         env:
-        - name: ConnectionString
+        - name: ApiSettings__ConnectionString
           value: "Server=sql-data;User=sa;Password=Pass@word;Database=dotnetgigs.applicants;"
-        - name: ConnectionStringRedis
+        - name: ApiSettings__RedisConnectionString
           value: "redis:6379"
-        - name: HostRabbitmq
+        - name: ApiSettings__HostRabbitmq
           value: "rabbitmq"
         - name: ASPNETCORE_URLS
           value: "http://+:8080"
         ports:
         - containerPort: 8080
-        # --- AJOUT DES LIMITES DE PERF ---
         resources:
           requests:
             cpu: "0.5"
@@ -54,11 +51,6 @@ spec:
             path: /hc
             port: 8080
           initialDelaySeconds: 120
-        readinessProbe:
-          httpGet:
-            path: /hc
-            port: 8080
-          initialDelaySeconds: 60
 ---
 apiVersion: v1
 kind: Service
@@ -67,10 +59,11 @@ metadata:
   namespace: projet-apps
 spec:
   ports:
-  - port: 80       # Port exposé pour le WebMVC
-    targetPort: 8080 # Port réel de l'application .NET
+  - port: 80
+    targetPort: 8080
   selector:
     app: applicants-api
+
 # apiVersion: apps/v1
 # kind: Deployment
 # metadata:

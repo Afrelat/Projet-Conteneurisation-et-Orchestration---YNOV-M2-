@@ -33,11 +33,17 @@ spec:
         image: warshall/webmvc:v1.0.0
         env:
         - name: IdentityUrl
-          value: "http://identity-api"
+          value: "http://identity-api.projet-apps.svc.cluster.local"
         - name: ApplicantsUrl
-          value: "http://applicants-api"
+          value: "http://applicants-api.projet-apps.svc.cluster.local"
         - name: JobsUrl
-          value: "http://jobs-api"
+          value: "http://jobs-api.projet-apps.svc.cluster.local"
+        # - name: IdentityUrl
+        #   value: "http://identity-api"
+        # - name: ApplicantsUrl
+        #   value: "http://applicants-api"
+        # - name: JobsUrl
+        #   value: "http://jobs-api"
         ports:
         - containerPort: 80
         # --- AJOUT DES LIMITES DE PERF ---
