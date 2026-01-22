@@ -1,3 +1,4 @@
+---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -18,8 +19,8 @@ spec:
       - name: rabbitmq
         image: rabbitmq:3-management
         ports:
-        - containerPort: 5672 # Port de communication
-        - containerPort: 15672 # Port de l'interface de gestion (UI)
+        - containerPort: 5672
+        - containerPort: 15672
         env:
         - name: RABBITMQ_DEFAULT_USER
           value: "guest"
@@ -29,7 +30,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: rabbitmq # Doit correspondre à HostRabbitmq=rabbitmq dans vos APIs
+  name: rabbitmq
   namespace: projet-apps
 spec:
   type: ClusterIP

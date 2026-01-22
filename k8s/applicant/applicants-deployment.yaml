@@ -33,8 +33,12 @@ spec:
           value: "Server=sql-data;User=sa;Password=Pass@word;Database=dotnetgigs.applicants;"
         - name: ApiSettings__RedisConnectionString
           value: "redis:6379"
+        # Ajout de plusieurs variantes pour garantir que le code trouve l'hôte
+        - name: RabbitMq__Host
+          value: "rabbitmq"
         - name: ApiSettings__HostRabbitmq
           value: "rabbitmq"
+       
         - name: ASPNETCORE_URLS
           value: "http://+:8080"
         ports:
@@ -46,11 +50,6 @@ spec:
           limits:
             cpu: "1"
             memory: "1500Mi"
-        livenessProbe:
-          httpGet:
-            path: /hc
-            port: 8080
-          initialDelaySeconds: 120
 ---
 apiVersion: v1
 kind: Service
@@ -63,55 +62,3 @@ spec:
     targetPort: 8080
   selector:
     app: applicants-api
-
-# apiVersion: apps/v1
-# kind: Deployment
-# metadata:
-#   name: applicants-api
-#   namespace: projet-apps
-# spec:
-#   replicas: 1
-#   selector:
-#     matchLabels:
-#       app: applicants-api
-#   template:
-#     metadata:
-#       labels:
-#         app: applicants-api
-#     spec:
-#       containers:
-#       - name: applicants-api
-#         image: warshall/applicants-api:v1.0.0
-#         env:
-#         - name: ConnectionString
-#           value: "Server=sql-data;User=sa;Password=Pass@word;Database=dotnetgigs.applicants;"
-#         - name: ConnectionStringRedis
-#           value: "redis:6379"
-#         - name: HostRabbitmq
-#           value: "rabbitmq"
-#         - name: ASPNETCORE_URLS
-#           value: "http://+:8080"
-#         ports:
-#         - containerPort: 8080
-#         livenessProbe:
-#           httpGet:
-#             path: /hc
-#             port: 8080
-#           initialDelaySeconds: 120
-#         readinessProbe:
-#           httpGet:
-#             path: /hc
-#             port: 8080
-#           initialDelaySeconds: 60
-# ---
-# apiVersion: v1
-# kind: Service
-# metadata:
-#   name: applicants-api
-#   namespace: projet-apps
-# spec:
-#   ports:
-#   - port: 80       # Port utilisé par les autres services
-#     targetPort: 8080 # Port réel de l'application
-#   selector:
-#     app: applicants-api

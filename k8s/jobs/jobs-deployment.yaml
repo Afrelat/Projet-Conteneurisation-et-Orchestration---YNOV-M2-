@@ -21,6 +21,8 @@ spec:
           value: "Server=sql-data;User=sa;Password=Pass@word;Database=dotnetgigs.jobs;"
         - name: ApiSettings__RedisConnectionString
           value: "redis:6379"
+        - name: RabbitMq__Host
+          value: "rabbitmq"
         - name: ApiSettings__HostRabbitmq
           value: "rabbitmq"
         - name: ASPNETCORE_URLS
@@ -40,55 +42,3 @@ spec:
     targetPort: 8080
   selector:
     app: jobs-api
-
-# apiVersion: apps/v1
-# kind: Deployment
-# metadata:
-#   name: jobs-api
-#   namespace: projet-apps
-# spec:
-#   replicas: 1
-#   selector:
-#     matchLabels:
-#       app: jobs-api
-#   template:
-#     metadata:
-#       labels:
-#         app: jobs-api
-#     spec:
-#       containers:
-#       - name: jobs-api
-#         image: warshall/jobs-api:v1.0.0
-#         env:
-#         - name: ConnectionString
-#           value: "Server=sql-data;User=sa;Password=Pass@word;Database=dotnetgigs.jobs;"
-#         - name: ConnectionStringRedis
-#           value: "redis:6379"
-#         - name: HostRabbitmq
-#           value: "rabbitmq"
-#         - name: ASPNETCORE_URLS
-#           value: "http://+:8080"
-#         ports:
-#         - containerPort: 8080
-#         livenessProbe:
-#           httpGet:
-#             path: /hc
-#             port: 8080
-#           initialDelaySeconds: 120
-#         readinessProbe:
-#           httpGet:
-#             path: /hc
-#             port: 8080
-#           initialDelaySeconds: 60
-# ---
-# apiVersion: v1
-# kind: Service
-# metadata:
-#   name: jobs-api
-#   namespace: projet-apps
-# spec:
-#   ports:
-#   - port: 80
-#     targetPort: 8080
-#   selector:
-#     app: jobs-api
