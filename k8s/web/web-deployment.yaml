@@ -38,6 +38,8 @@ spec:
           value: "http://applicants-api.projet-apps.svc.cluster.local"
         - name: JobsUrl
           value: "http://jobs-api.projet-apps.svc.cluster.local"
+        - name: ASPNETCORE_ENVIRONMENT
+          value: "Development"
         # - name: IdentityUrl
         #   value: "http://identity-api"
         # - name: ApplicantsUrl

@@ -38,9 +38,8 @@ spec:
           value: "rabbitmq"
         - name: ApiSettings__HostRabbitmq
           value: "rabbitmq"
-       
         - name: ASPNETCORE_URLS
-          value: "http://+:8080"
+          value: "Development"
         ports:
         - containerPort: 8080
         resources:
