@@ -8,6 +8,7 @@ $IDENTITY_PATH   = "k8s/identity/identity-deployment.yaml"
 $JOBS_PATH       = "k8s/jobs/jobs-deployment.yaml"
 $APPLICANTS_PATH = "k8s/applicant/applicants-deployment.yaml"
 $WEB_PATH        = "k8s/web/web-deployment.yaml"
+$METRICS_PATH    = "k8s/metrics_server/component.yaml"
 
 Write-Host "`n=======================================================" -ForegroundColor Cyan
 Write-Host "   DÉPLOIEMENT : ORCHESTRATION EFK + MICROSERVICES     " -ForegroundColor Cyan
@@ -22,6 +23,7 @@ kubectl apply -f $EFK_PATH -n $NAMESPACE
 kubectl apply -f $SQL_PATH -n $NAMESPACE
 kubectl apply -f $REDIS_PATH -n $NAMESPACE
 kubectl apply -f $RABBIT_PATH -n $NAMESPACE
+kubectl apply -f $METRICS_PATH -n $NAMESPACE
 
 Write-Host "Attente de l'infrastructure..." -ForegroundColor Gray
 kubectl wait --for=condition=ready pod -l app=elasticsearch -n $NAMESPACE --timeout=300s
