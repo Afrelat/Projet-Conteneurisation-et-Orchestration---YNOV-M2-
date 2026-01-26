@@ -30,7 +30,7 @@ spec:
               topologyKey: "kubernetes.io/hostname"
       containers:
         - name: sql-data
-          image: warshall/sql-data:v1.0.0 
+          image: warshall/sql-data:v2.0.0 
           imagePullPolicy: Always
           ports:
             - containerPort: 1433

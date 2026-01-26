@@ -2,12 +2,14 @@
 WORKDIR /app
 EXPOSE 80
 EXPOSE 443
+# Variable d'env pour que ton app sache où est Fluent Bit
+ENV FLUENTBIT_HOST=fluent-bit
+ENV FLUENTBIT_PORT=5044
 
 FROM mcr.microsoft.com/dotnet/core/sdk:2.1-stretch AS build
 WORKDIR /src
 COPY "Web" "Web/"
 COPY "Foundation/Http" "Foundation/Http/"
-
 RUN dotnet restore "Web/Web.csproj"
 COPY . .
 WORKDIR "/src/Web"

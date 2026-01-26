@@ -27,7 +27,7 @@ spec:
               topologyKey: "kubernetes.io/hostname"
       containers:
       - name: applicants-api
-        image: warshall/applicants-api:v1.0.0
+        image: warshall/applicants-api:v2.0.0
         env:
         - name: ApiSettings__ConnectionString
           value: "Server=sql-data;User=sa;Password=Pass@word;Database=dotnetgigs.applicants;"

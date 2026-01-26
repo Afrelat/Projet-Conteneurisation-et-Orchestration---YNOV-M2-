@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: jobs-api
-        image: warshall/jobs-api:v1.0.0
+        image: warshall/jobs-api:v2.0.0
         env:
         - name: ApiSettings__ConnectionString
           value: "Server=sql-data;User=sa;Password=Pass@word;Database=dotnetgigs.jobs;"

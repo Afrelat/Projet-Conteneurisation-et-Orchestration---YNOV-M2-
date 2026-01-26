@@ -1,3 +1,33 @@
+# 1. PERMISSIONS RBAC (Indispensable pour le filtre Kubernetes)
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: fluent-bit
+  namespace: projet-apps
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: fluent-bit-read
+rules:
+- apiGroups: [""]
+  resources: ["pods", "namespaces"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: fluent-bit-read
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: fluent-bit-read
+subjects:
+- kind: ServiceAccount
+  name: fluent-bit
+  namespace: projet-apps
+---
+# 2. CONFIGURATION FLUENT BIT
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -11,10 +41,24 @@ data:
         Parsers_File  parsers.conf
 
     [INPUT]
-        Name          tcp
-        Listen        0.0.0.0
-        Port          5044
-        Format        json
+        Name              tail
+        Path              /var/log/containers/*.log
+        Parser            docker
+        Tag               kube.*
+        Mem_Buf_Limit     5MB
+        Skip_Long_Lines   On
+
+    [FILTER]
+        Name                kubernetes
+        Match               kube.*
+        Kube_URL            https://kubernetes.default.svc:443
+        Kube_CA_File        /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        Kube_Token_File     /var/run/secrets/kubernetes.io/serviceaccount/token
+        Kube_Tag_Prefix     kube.var.log.containers.
+        Merge_Log           On
+        Merge_Log_Key       log_processed
+        K8S-Logging.Parser  On
+        K8S-Logging.Exclude Off
 
     [OUTPUT]
         Name          es
@@ -25,13 +69,15 @@ data:
         Logstash_Prefix fluentbit
         Replace_Dots  On
         Suppress_Type_Name On
+
   parsers.conf: |
     [PARSER]
-        Name        json
+        Name        docker
         Format      json
         Time_Key    time
-        Time_Format %d/%b/%Y:%H:%M:%S %z
+        Time_Format %Y-%m-%dT%H:%M:%S.%L%z
 ---
+# 3. ELASTICSEARCH (StatefulSet)
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -48,23 +94,20 @@ spec:
       labels:
         app: elasticsearch
     spec:
+      securityContext:
+        fsGroup: 1000
       containers:
       - name: elasticsearch
-        image: docker.elastic.co/elasticsearch/elasticsearch:8.11.1
+        image: warshall/elasticsearch:v2.0.0
         env:
         - name: discovery.type
           value: "single-node"
         - name: xpack.security.enabled
           value: "false"
         - name: ES_JAVA_OPTS
-          value: "-Xms768m -Xmx768m"
+          value: "-Xms512m -Xmx512m"
         ports:
         - containerPort: 9200
-        resources:
-          requests:
-            memory: "1Gi"
-          limits:
-            memory: "2Gi"
         volumeMounts:
         - name: es-data
           mountPath: /usr/share/elasticsearch/data
@@ -89,13 +132,13 @@ spec:
   - port: 9200
     targetPort: 9200
 ---
+# 4. FLUENT BIT (DaemonSet pour lire les logs du Node)
 apiVersion: apps/v1
-kind: Deployment
+kind: DaemonSet
 metadata:
   name: fluent-bit
   namespace: projet-apps
 spec:
-  replicas: 1
   selector:
     matchLabels:
       app: fluent-bit
@@ -104,32 +147,34 @@ spec:
       labels:
         app: fluent-bit
     spec:
+      serviceAccountName: fluent-bit
       containers:
       - name: fluent-bit
-        image: cr.fluentbit.io/fluent/fluent-bit:2.2.0
-        ports:
-        - containerPort: 5044
+        image: warshall/fluent-bit:v2.0.0
         volumeMounts:
+        - name: varlog
+          mountPath: /var/log
+        - name: varlibdockercontainers
+          mountPath: /var/lib/docker/containers
+          readOnly: true
         - name: config
           mountPath: /fluent-bit/etc/fluent-bit.conf
           subPath: fluent-bit.conf
+        - name: config
+          mountPath: /fluent-bit/etc/parsers.conf
+          subPath: parsers.conf
       volumes:
+      - name: varlog
+        hostPath:
+          path: /var/log
+      - name: varlibdockercontainers
+        hostPath:
+          path: /var/lib/docker/containers
       - name: config
         configMap:
           name: fluent-bit-config
 ---
-apiVersion: v1
-kind: Service
-metadata:
-  name: fluent-bit
-  namespace: projet-apps
-spec:
-  selector:
-    app: fluent-bit
-  ports:
-  - port: 5044
-    targetPort: 5044
----
+# 5. KIBANA
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -147,7 +192,7 @@ spec:
     spec:
       containers:
       - name: kibana
-        image: docker.elastic.co/kibana/kibana:8.11.1
+        image: warshall/kibana:v2.0.0
         env:
         - name: ELASTICSEARCH_HOSTS
           value: "http://elasticsearch:9200"

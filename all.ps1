@@ -19,11 +19,12 @@ if (!(kubectl get ns $NAMESPACE --ignore-not-found)) { kubectl create ns $NAMESP
 
 # 2. INFRASTRUCTURE PRIORITAIRE
 Write-Host "[1/4] Déploiement de l'Infrastructure (EFK, SQL, Redis, Rabbit)..." -ForegroundColor Yellow
+kubectl apply -f $METRICS_PATH
 kubectl apply -f $EFK_PATH -n $NAMESPACE
 kubectl apply -f $SQL_PATH -n $NAMESPACE
 kubectl apply -f $REDIS_PATH -n $NAMESPACE
 kubectl apply -f $RABBIT_PATH -n $NAMESPACE
-kubectl apply -f $METRICS_PATH -n $NAMESPACE
+
 
 Write-Host "Attente de l'infrastructure..." -ForegroundColor Gray
 kubectl wait --for=condition=ready pod -l app=elasticsearch -n $NAMESPACE --timeout=300s
