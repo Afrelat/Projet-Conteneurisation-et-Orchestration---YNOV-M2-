@@ -77,3 +77,5 @@ foreach ($pod in $pods.items) {
     if ($status -eq "Running") { Write-Host "Pod $podName : [OK]" -ForegroundColor Green } 
     else { Write-Host "Pod $podName : [$status]" -ForegroundColor Red }
 }
+kubectl top pods -n projet-apps
+kubectl get hpa -n projet-apps
