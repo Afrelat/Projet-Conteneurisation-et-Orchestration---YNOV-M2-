@@ -255,4 +255,4 @@ spec:
       name: cpu
       target:
         type: Utilization
-        averageUtilization: 20 # Seuil réglé à 20% pour déclencher le test facilement
+        averageUtilization: 60 # Seuil réglé à 60% pour déclencher le test facilement
