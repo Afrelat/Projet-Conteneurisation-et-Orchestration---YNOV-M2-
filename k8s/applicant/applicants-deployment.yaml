@@ -17,15 +17,16 @@ spec:
       - name: applicants-api
         image: warshall/applicants-api:v2.1.0
         imagePullPolicy: Always
-        # --- AUGMENTATION DU DÉLAI ---
-        # 45 secondes est le "sweet spot" pour laisser SQL Server initialiser les DBs
+
         command: ["/bin/sh", "-c"]
-        args: ["sleep 45; dotnet applicants.api.dll"]
+        args: ["sleep 60; dotnet applicants.api.dll"]
+
         env:
         - name: ASPNETCORE_ENVIRONMENT
           value: "Development"
         - name: ASPNETCORE_URLS
           value: "http://+:80"
+
         - name: ConnectionString
           value: "Server=sql-data.ns-data;User Id=sa;Password=Pass@word;Database=dotnetgigs.applicants;TrustServerCertificate=True;Connect Timeout=60;"
         - name: ApiSettings__ConnectionString
@@ -36,22 +37,25 @@ spec:
           value: "rabbitmq.ns-data"
         - name: ApiSettings__HostRabbitmq
           value: "rabbitmq.ns-data"
+
         ports:
         - containerPort: 80
-        # --- SONDES DE SANTÉ AJUSTÉES ---
+
         readinessProbe:
           tcpSocket:
             port: 80
-          initialDelaySeconds: 50 # Doit être supérieur au sleep
+          initialDelaySeconds: 70
           periodSeconds: 10
+
         livenessProbe:
           tcpSocket:
             port: 80
-          initialDelaySeconds: 60
+          initialDelaySeconds: 90
           periodSeconds: 20
+
         resources:
           requests:
-            cpu: "500m" # Conformément à tes spécifications (0.5 CPU)
+            cpu: "500m"
             memory: "500Mi"
           limits:
             cpu: "1"
@@ -63,6 +67,7 @@ metadata:
   name: applicants-api
   namespace: projet-apps
 spec:
+  type: ClusterIP
   ports:
   - port: 80
     targetPort: 80
