@@ -1,10 +1,10 @@
 # --- CONFIGURATION MISE A JOUR ---
 $DOCKER_USER = "warshall"
-$VERSION = "v2.1.0"
+$VERSION = "v2.3.0"
 $IMAGES = @(
-    @{ Name = "webmvc";         Path = "Web/Dockerfile" },
-    @{ Name = "applicants-api"; Path = "Services/Applicants.Api/Dockerfile" },
-    @{ Name = "jobs-api";       Path = "Services/Jobs.Api/Dockerfile" },
+    # @{ Name = "webmvc";         Path = "Web/Dockerfile" },
+    # @{ Name = "applicants-api"; Path = "Services/Applicants.Api/Dockerfile" },
+    # @{ Name = "jobs-api";       Path = "Services/Jobs.Api/Dockerfile" },
     @{ Name = "identity-api";   Path = "Services/Identity.Api/Dockerfile" }
     
     # CORRECTION ICI : Le dossier s'appelle "Database" sur ton image
