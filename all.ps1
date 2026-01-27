@@ -86,7 +86,8 @@ Start-Process powershell -ArgumentList "-NoExit", "-Command", "`$Host.UI.RawUI.W
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "`$Host.UI.RawUI.WindowTitle='PF Kibana'; kubectl port-forward service/kibana 5601:5601 -n $NS_MON"
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "`$Host.UI.RawUI.WindowTitle='PF Prometheus'; kubectl port-forward service/prometheus-service 9090:9090 -n $NS_MON"
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "`$Host.UI.RawUI.WindowTitle='PF Grafana'; kubectl port-forward service/grafana-service 3000:3000 -n $NS_MON"
-
+# Ajoute ceci dans la section "OUVERTURE DES ACCÈS" de ton script
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "`$Host.UI.RawUI.WindowTitle='MONITOR Redis'; kubectl exec -it redis-0 -n ns-data -- redis-cli monitor"
 # 5. DIAGNOSTIC FINAL
 Write-Host "`n[4/4] État final du cluster :" -ForegroundColor Yellow
 kubectl get pods -n $NS_APP
