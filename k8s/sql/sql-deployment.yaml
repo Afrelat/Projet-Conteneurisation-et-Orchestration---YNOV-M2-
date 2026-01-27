@@ -18,9 +18,20 @@ spec:
         - name: sql-data
           image: warshall/sql-data:v2.0.0 
           imagePullPolicy: Always
+          # --- AUTOMATISATION DE LA CRÉATION DES BASES ---
+          lifecycle:
+            postStart:
+              exec:
+                command:
+                  - /bin/sh
+                  - -c
+                  - |
+                    sleep 30;
+                    /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P Pass@word -Q "IF DB_ID('Microsoft.eShopOnContainers.Services.IdentityDb') IS NULL CREATE DATABASE [Microsoft.eShopOnContainers.Services.IdentityDb]"
+          # ----------------------------------------------
           ports:
             - containerPort: 1433
-            - containerPort: 135 # Port RPC pour la stabilité
+            - containerPort: 135
           env:
             - name: ACCEPT_EULA
               value: "Y"
@@ -30,21 +41,17 @@ spec:
               value: "1433"
             - name: MSSQL_RPC_PORT
               value: "135"
-          # Ajout d'un test de santé pour bloquer les APIs tant que SQL n'est pas prêt
           readinessProbe:
             exec:
               command:
                 - /opt/mssql-tools/bin/sqlcmd
                 - -S
                 - localhost
-                - -U
-                - sa
-                - -P
-                - Pass@word
-                - -Q
-                - "SELECT 1"
-            initialDelaySeconds: 30
-            periodSeconds: 10
+                - -U sa
+                - -P Pass@word
+                - -Q "SELECT 1"
+            initialDelaySeconds: 60
+            periodSeconds: 20
           resources: 
             requests:
               cpu: "500m"
