@@ -1,13 +1,13 @@
 ﻿FROM mcr.microsoft.com/dotnet/core/aspnet:2.1-stretch-slim AS base
 WORKDIR /app
 EXPOSE 80
+EXPOSE 443
 
 FROM mcr.microsoft.com/dotnet/core/sdk:2.1-stretch AS build
 WORKDIR /src
-# Attention à la casse (Majuscules) pour Identity.Api selon tes dossiers
-COPY ["Services/Identity.Api/Identity.Api.csproj", "Services/Identity.Api/"]
-COPY ["Foundation/Events/Events.csproj", "Foundation/Events/"]
-
+COPY "Services/Identity.Api" "Services/Identity.Api/"
+COPY "Foundation/Events" "Foundation/Events/"
+RUN ls -la
 RUN dotnet restore "Services/Identity.Api/Identity.Api.csproj"
 COPY . .
 WORKDIR "/src/Services/Identity.Api"

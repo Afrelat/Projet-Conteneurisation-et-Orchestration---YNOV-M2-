@@ -247,3 +247,14 @@ webmvc
 
 identity.api ── user.data (Redis)
 ```
+kubectl delete namespace projet-apps ns-monitoring ns-data 
+kubectl delete namespace ns-data    
+kubectl delete namespace ns-monitoring
+
+Service URL Locale Login 
+Frontend Web http://localhost:8080
+Kibana (Logs) http://localhost:5601
+Grafana (Metrics)http://localhost:3000 admin / admin
+Rabbit MQ UI http://localhost:15672 guest / guest
+Prometheus http://localhost:9090
+

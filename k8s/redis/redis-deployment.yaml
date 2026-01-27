@@ -1,8 +1,8 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: redis # Changé de user-data à redis
-  namespace: projet-apps
+  name: redis
+  namespace: ns-data
 spec:
   serviceName: "redis"
   replicas: 1
@@ -14,6 +14,7 @@ spec:
       labels:
         app: redis
     spec:
+      # Suppression de l'affinité pour permettre le déploiement local
       containers:
       - name: redis
         image: redis:6-alpine
@@ -22,13 +23,16 @@ spec:
         resources:
           requests:
             cpu: "100m"
-            memory: "100Mi" # Réduit car 500Mi est beaucoup pour un Redis vide
+            memory: "100Mi"
+          limits:
+            cpu: "200m"
+            memory: "256Mi"
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: redis # NOM CRUCIAL : Vos APIs cherchent "redis"
-  namespace: projet-apps
+  name: redis
+  namespace: ns-data
 spec:
   ports:
   - port: 6379

@@ -1,181 +1,10 @@
-# # apiVersion: apps/v1
-# # kind: Deployment
-# # metadata:
-# #   name: webmvc
-# #   namespace: projet-apps
-# # spec:
-# #   replicas: 1
-# #   selector:
-# #     matchLabels:
-# #       app: webmvc
-# #   template:
-# #     metadata:
-# #       labels:
-# #         app: webmvc
-# #     spec:
-# #       # --- AJOUT DES AFFINITÉS ---
-# #       # Le Web doit être proche des APIs Jobs et Applicants
-# #       affinity:
-# #         podAffinity:
-# #           preferredDuringSchedulingIgnoredDuringExecution:
-# #           - weight: 100
-# #             podAffinityTerm:
-# #               labelSelector:
-# #                 matchExpressions:
-# #                 - key: app
-# #                   operator: In
-# #                   values:
-# #                   - jobs-api
-# #                   - applicants-api
-# #               topologyKey: "kubernetes.io/hostname"
-# #       containers:
-# #       - name: webmvc
-# #         image: warshall/webmvc:v1.0.0
-# #         env:
-# #         - name: IdentityUrl
-# #           value: "http://identity-api.projet-apps.svc.cluster.local"
-# #         - name: ApplicantsUrl
-# #           value: "http://applicants-api.projet-apps.svc.cluster.local"
-# #         - name: JobsUrl
-# #           value: "http://jobs-api.projet-apps.svc.cluster.local"
-# #         - name: ASPNETCORE_ENVIRONMENT
-# #           value: "Development"
-# #         # - name: IdentityUrl
-# #         #   value: "http://identity-api"
-# #         # - name: ApplicantsUrl
-# #         #   value: "http://applicants-api"
-# #         # - name: JobsUrl
-# #         #   value: "http://jobs-api"
-# #         ports:
-# #         - containerPort: 80
-# #         # --- AJOUT DES LIMITES DE PERF ---
-# #         resources:
-# #           requests:
-# #             cpu: "4m"
-# #             memory: "900Mi"
-# #           limits:
-# #             cpu: "1"
-# #             memory: "2000Mi"
-# #         livenessProbe:
-# #           httpGet:
-# #             path: /
-# #             port: 80
-# #           initialDelaySeconds: 120
-# #           initialDelaySeconds: 60
-# # ---
-# # apiVersion: v1
-# # kind: Service
-# # metadata:
-# #   name: webmvc
-# #   namespace: projet-apps
-# # spec:
-# #   ports:
-# #   - port: 80
-# #     targetPort: 80
-# #   selector:
-# #     app: webmvc
-
-
-# apiVersion: apps/v1
-# kind: Deployment
-# metadata:
-#   name: webmvc
-#   namespace: projet-apps
-# spec:
-#   # On ne force plus "replicas: 1" ici, c'est le HPA qui va décider.
-#   # Le HPA commencera par défaut au minReplicas (voir plus bas).
-#   selector:
-#     matchLabels:
-#       app: webmvc
-#   template:
-#     metadata:
-#       labels:
-#         app: webmvc
-#     spec:
-#       # --- AFFINITÉS ---
-#       affinity:
-#         podAffinity:
-#           preferredDuringSchedulingIgnoredDuringExecution:
-#           - weight: 100
-#             podAffinityTerm:
-#               labelSelector:
-#                 matchExpressions:
-#                 - key: app
-#                   operator: In
-#                   values:
-#                   - jobs-api
-#                   - applicants-api
-#               topologyKey: "kubernetes.io/hostname"
-#       containers:
-#       - name: webmvc
-#         image: warshall/webmvc:v1.0.0
-#         env:
-#         - name: IdentityUrl
-#           value: "http://identity-api.projet-apps.svc.cluster.local"
-#         - name: ApplicantsUrl
-#           value: "http://applicants-api.projet-apps.svc.cluster.local"
-#         - name: JobsUrl
-#           value: "http://jobs-api.projet-apps.svc.cluster.local"
-#         - name: ASPNETCORE_ENVIRONMENT
-#           value: "Development"
-#         ports:
-#         - containerPort: 80
-        
-#         # --- LIMITES DE PERF (Nécessaires pour le HPA) ---
-#         resources:
-#           requests:
-#             cpu: "100m"   # J'ai augmenté 4m -> 100m (4m est trop faible pour un HPA stable)
-#             memory: "900Mi"
-#           limits:
-#             cpu: "1"
-#             memory: "2000Mi"
-        
-#         livenessProbe:
-#           httpGet:
-#             path: /
-#             port: 80
-#           initialDelaySeconds: 60 # Corrigé (tu avais deux lignes ici)
-#           periodSeconds: 10
-# ---
-# apiVersion: v1
-# kind: Service
-# metadata:
-#   name: webmvc
-#   namespace: projet-apps
-# spec:
-#   ports:
-#   - port: 80
-#     targetPort: 80
-#   selector:
-#     app: webmvc
-# ---
-# # --- AJOUT DE LA SCALABILITÉ (HPA) ---
-# apiVersion: autoscaling/v2
-# kind: HorizontalPodAutoscaler
-# metadata:
-#   name: webmvc-hpa
-#   namespace: projet-apps
-# spec:
-#   scaleTargetRef:
-#     apiVersion: apps/v1
-#     kind: Deployment
-#     name: webmvc
-#   minReplicas: 2   # Minimum 2 pour la haute disponibilité
-#   maxReplicas: 5  # Maximum en cas de pic de charge
-#   metrics:
-#   - type: Resource
-#     resource:
-#       name: cpu
-#       target:
-#         type: Utilization
-#         averageUtilization: 20 # Scale UP si CPU > 75% du request (soit > 75m)
-
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: webmvc
   namespace: projet-apps
 spec:
+  # Note : replicas sera géré par le HPA (min 2)
   selector:
     matchLabels:
       app: webmvc
@@ -184,19 +13,6 @@ spec:
       labels:
         app: webmvc
     spec:
-      affinity:
-        podAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                - key: app
-                  operator: In
-                  values:
-                  - jobs-api
-                  - applicants-api
-              topologyKey: "kubernetes.io/hostname"
       containers:
       - name: webmvc
         image: warshall/webmvc:v1.0.0
@@ -255,4 +71,4 @@ spec:
       name: cpu
       target:
         type: Utilization
-        averageUtilization: 60 # Seuil réglé à 60% pour déclencher le test facilement
+        averageUtilization: 60

@@ -15,21 +15,41 @@ spec:
     spec:
       containers:
       - name: jobs-api
-        image: warshall/jobs-api:v2.0.0
+        image: warshall/jobs-api:v2.1.0
+        imagePullPolicy: Always
+        # --- FIX TIMING ---
+        command: ["/bin/sh", "-c"]
+        args: ["sleep 45; dotnet jobs.api.dll"]
         env:
-        - name: ApiSettings__ConnectionString
-          value: "Server=sql-data;User=sa;Password=Pass@word;Database=dotnetgigs.jobs;"
-        - name: ApiSettings__RedisConnectionString
-          value: "redis:6379"
-        - name: RabbitMq__Host
-          value: "rabbitmq"
-        - name: ApiSettings__HostRabbitmq
-          value: "rabbitmq"
-        - name: ASPNETCORE_URLS
+        - name: ASPNETCORE_ENVIRONMENT
           value: "Development"
+        - name: ASPNETCORE_URLS
+          value: "http://+:80"
+        - name: ConnectionString
+          value: "Server=sql-data.ns-data;User Id=sa;Password=Pass@word;Database=dotnetgigs.jobs;TrustServerCertificate=True;Connect Timeout=60;"
+        - name: ApiSettings__ConnectionString
+          value: "Server=sql-data.ns-data;User Id=sa;Password=Pass@word;Database=dotnetgigs.jobs;TrustServerCertificate=True;Connect Timeout=60;"
+        - name: ApiSettings__RedisConnectionString
+          value: "redis.ns-data:6379"
+        - name: RabbitMq__Host
+          value: "rabbitmq.ns-data"
+        - name: ApiSettings__HostRabbitmq
+          value: "rabbitmq.ns-data"
         ports:
-        - containerPort: 8080
-
+        - containerPort: 80
+        # --- FIX SONDES ---
+        readinessProbe:
+          tcpSocket:
+            port: 80
+          initialDelaySeconds: 50
+          periodSeconds: 10
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "500Mi"
+          limits:
+            cpu: "1"
+            memory: "1500Mi"
 ---
 apiVersion: v1
 kind: Service
@@ -39,6 +59,6 @@ metadata:
 spec:
   ports:
   - port: 80
-    targetPort: 8080
+    targetPort: 80
   selector:
     app: jobs-api

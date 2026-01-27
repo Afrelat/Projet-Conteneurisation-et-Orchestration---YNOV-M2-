@@ -12,37 +12,44 @@ spec:
     metadata:
       labels:
         app: identity-api
-    spec: # <-- L'affinité doit être ici
-      affinity:
-        podAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-          - labelSelector:
-              matchExpressions:
-              - key: app
-                operator: In
-                values:
-                - sql-data
-            topologyKey: "kubernetes.io/hostname"
+    spec:
       containers:
       - name: identity-api
-        image: warshall/identity-api:v1.0.0
+        image: warshall/identity-api:v2.1.0
+        imagePullPolicy: Always
+        # --- FIX TIMING : On attend que SQL et Redis soient prêts ---
+        command: ["/bin/sh", "-c"]
+        args: ["sleep 45; dotnet identity.api.dll"]
         env:
-        - name: ApiSettings__ConnectionString
-          value: "Server=sql-data;Database=Microsoft.eShopOnContainers.Services.IdentityDb;User Id=sa;Password=Pass@word;"
-        - name: ApiSettings__RedisConnectionString
-          value: "redis:6379"
-        - name: RabbitMq__Host
-          value: "rabbitmq"
-        - name: ApiSettings__HostRabbitmq
-          value: "rabbitmq"
-        - name: ASPNETCORE_URLS
+        - name: ASPNETCORE_ENVIRONMENT
           value: "Development"
+        - name: ASPNETCORE_URLS
+          value: "http://+:80"
+        - name: ConnectionString
+          value: "Server=sql-data.ns-data;Database=Microsoft.eShopOnContainers.Services.IdentityDb;User Id=sa;Password=Pass@word;TrustServerCertificate=True;Connect Timeout=60;"
+        - name: ApiSettings__ConnectionString
+          value: "Server=sql-data.ns-data;Database=Microsoft.eShopOnContainers.Services.IdentityDb;User Id=sa;Password=Pass@word;TrustServerCertificate=True;Connect Timeout=60;"
+        
+        # --- FIX NOM REDIS : Doit correspondre au Service dans ns-data ---
+        - name: ApiSettings__RedisConnectionString
+          value: "redis.ns-data:6379"
+        
+        - name: RabbitMq__Host
+          value: "rabbitmq.ns-data"
+        - name: ApiSettings__HostRabbitmq
+          value: "rabbitmq.ns-data"
         ports:
         - containerPort: 80
-        resources: # Ajout des ressources selon tes limites
+        # --- FIX SONDES ---
+        readinessProbe:
+          tcpSocket:
+            port: 80
+          initialDelaySeconds: 50
+          periodSeconds: 10
+        resources:
           requests:
-            cpu: "0.5"
-            memory: "800Mi" # Augmenté à 800 pour le boot
+            cpu: "500m"
+            memory: "500Mi"
           limits:
             cpu: "1"
             memory: "1500Mi"
@@ -53,6 +60,7 @@ metadata:
   name: identity-api
   namespace: projet-apps
 spec:
+  type: ClusterIP
   ports:
   - port: 80
     targetPort: 80

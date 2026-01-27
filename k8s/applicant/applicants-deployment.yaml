@@ -13,38 +13,45 @@ spec:
       labels:
         app: applicants-api
     spec:
-      affinity:
-        podAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                - key: app
-                  operator: In
-                  values:
-                  - sql-data
-              topologyKey: "kubernetes.io/hostname"
       containers:
       - name: applicants-api
-        image: warshall/applicants-api:v2.0.0
+        image: warshall/applicants-api:v2.1.0
+        imagePullPolicy: Always
+        # --- AUGMENTATION DU DÉLAI ---
+        # 45 secondes est le "sweet spot" pour laisser SQL Server initialiser les DBs
+        command: ["/bin/sh", "-c"]
+        args: ["sleep 45; dotnet applicants.api.dll"]
         env:
-        - name: ApiSettings__ConnectionString
-          value: "Server=sql-data;User=sa;Password=Pass@word;Database=dotnetgigs.applicants;"
-        - name: ApiSettings__RedisConnectionString
-          value: "redis:6379"
-        # Ajout de plusieurs variantes pour garantir que le code trouve l'hôte
-        - name: RabbitMq__Host
-          value: "rabbitmq"
-        - name: ApiSettings__HostRabbitmq
-          value: "rabbitmq"
-        - name: ASPNETCORE_URLS
+        - name: ASPNETCORE_ENVIRONMENT
           value: "Development"
+        - name: ASPNETCORE_URLS
+          value: "http://+:80"
+        - name: ConnectionString
+          value: "Server=sql-data.ns-data;User Id=sa;Password=Pass@word;Database=dotnetgigs.applicants;TrustServerCertificate=True;Connect Timeout=60;"
+        - name: ApiSettings__ConnectionString
+          value: "Server=sql-data.ns-data;User Id=sa;Password=Pass@word;Database=dotnetgigs.applicants;TrustServerCertificate=True;Connect Timeout=60;"
+        - name: ApiSettings__RedisConnectionString
+          value: "redis.ns-data:6379"
+        - name: RabbitMq__Host
+          value: "rabbitmq.ns-data"
+        - name: ApiSettings__HostRabbitmq
+          value: "rabbitmq.ns-data"
         ports:
-        - containerPort: 8080
+        - containerPort: 80
+        # --- SONDES DE SANTÉ AJUSTÉES ---
+        readinessProbe:
+          tcpSocket:
+            port: 80
+          initialDelaySeconds: 50 # Doit être supérieur au sleep
+          periodSeconds: 10
+        livenessProbe:
+          tcpSocket:
+            port: 80
+          initialDelaySeconds: 60
+          periodSeconds: 20
         resources:
           requests:
-            cpu: "0.5"
+            cpu: "500m" # Conformément à tes spécifications (0.5 CPU)
             memory: "500Mi"
           limits:
             cpu: "1"
@@ -58,6 +65,6 @@ metadata:
 spec:
   ports:
   - port: 80
-    targetPort: 8080
+    targetPort: 80
   selector:
     app: applicants-api

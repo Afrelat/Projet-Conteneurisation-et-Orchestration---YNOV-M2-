@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: sql-data
-  namespace: projet-apps
+  namespace: ns-data
 spec:
   serviceName: sql-data
   replicas: 1
@@ -14,32 +14,37 @@ spec:
       labels:
         app: sql-data
     spec:
-      # --- OPTIMISATION ARCHITECTE ---
-      # Empêche de mettre deux instances SQL sur le même nœud si vous scalez
-      affinity:
-        podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                - key: app
-                  operator: In
-                  values:
-                  - sql-data
-              topologyKey: "kubernetes.io/hostname"
       containers:
         - name: sql-data
           image: warshall/sql-data:v2.0.0 
           imagePullPolicy: Always
           ports:
             - containerPort: 1433
+            - containerPort: 135 # Port RPC pour la stabilité
           env:
             - name: ACCEPT_EULA
               value: "Y"
             - name: SA_PASSWORD
               value: "Pass@word"
-          # --- RESSOURCES MISES À JOUR ---
+            - name: MSSQL_TCP_PORT
+              value: "1433"
+            - name: MSSQL_RPC_PORT
+              value: "135"
+          # Ajout d'un test de santé pour bloquer les APIs tant que SQL n'est pas prêt
+          readinessProbe:
+            exec:
+              command:
+                - /opt/mssql-tools/bin/sqlcmd
+                - -S
+                - localhost
+                - -U
+                - sa
+                - -P
+                - Pass@word
+                - -Q
+                - "SELECT 1"
+            initialDelaySeconds: 30
+            periodSeconds: 10
           resources: 
             requests:
               cpu: "500m"
@@ -63,11 +68,15 @@ apiVersion: v1
 kind: Service
 metadata:
   name: sql-data
-  namespace: projet-apps
+  namespace: ns-data
 spec:
   type: ClusterIP
   ports:
-    - port: 1433
+    - name: sql-port
+      port: 1433
       targetPort: 1433
+    - name: rpc-port
+      port: 135
+      targetPort: 135
   selector:
     app: sql-data
