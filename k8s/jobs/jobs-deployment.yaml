@@ -34,9 +34,12 @@ spec:
         - name: ApiSettings__RedisConnectionString
           value: "redis.ns-data:6379"
         - name: RabbitMq__Host
-          value: "rabbitmq.ns-data"
+          value: "rabbitmq.ns-data.svc.cluster.local"
         - name: ApiSettings__HostRabbitmq
-          value: "rabbitmq.ns-data"
+          value: "rabbitmq.ns-data.svc.cluster.local"
+        - name: HostRabbitmq
+          value: "rabbitmq.ns-data.svc.cluster.local"
+
 
         ports:
         - containerPort: 80
