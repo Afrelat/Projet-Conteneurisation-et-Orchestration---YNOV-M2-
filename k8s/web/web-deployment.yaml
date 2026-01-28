@@ -29,16 +29,17 @@ spec:
       - name: webmvc
         image: warshall/webmvc:v1.0.0
         env:
-        - name: IdentityUrl
+        - name: ApiSettings__IdentityApiUrl
           value: "http://identity-api.projet-apps.svc.cluster.local"
-        - name: ApplicantsUrl
-          value: "http://applicants-api.projet-apps.svc.cluster.local"
-        - name: JobsUrl
+        - name: ApiSettings__JobsApiUrl
           value: "http://jobs-api.projet-apps.svc.cluster.local"
+        - name: ApiSettings__ApplicantsApiUrl
+          value: "http://applicants-api.projet-apps.svc.cluster.local"
         - name: ASPNETCORE_ENVIRONMENT
           value: "Development"
         ports:
         - containerPort: 80
+      
         resources:
           requests:
             cpu: "100m"
