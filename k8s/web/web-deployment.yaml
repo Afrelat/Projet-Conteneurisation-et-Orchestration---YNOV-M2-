@@ -4,7 +4,6 @@ metadata:
   name: webmvc
   namespace: projet-apps
 spec:
-  # Note : replicas sera géré par le HPA (min 2)
   selector:
     matchLabels:
       app: webmvc
@@ -13,6 +12,19 @@ spec:
       labels:
         app: webmvc
     spec:
+      affinity:
+        podAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - jobs-api
+                  - applicants-api
+              topologyKey: "kubernetes.io/hostname"
       containers:
       - name: webmvc
         image: warshall/webmvc:v1.0.0
@@ -71,4 +83,4 @@ spec:
       name: cpu
       target:
         type: Utilization
-        averageUtilization: 60
+        averageUtilization: 60 # Seuil réglé à 60% pour déclencher le test facilement
