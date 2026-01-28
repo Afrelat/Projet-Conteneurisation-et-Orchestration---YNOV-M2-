@@ -84,3 +84,29 @@ spec:
       target:
         type: Utilization
         averageUtilization: 60 # Seuil réglé à 60% pour déclencher le test facilement
+# ---
+# # --- NOUVELLE PARTIE : INGRESS POUR LE HTTPS ---
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: webmvc-ingress
+#   namespace: projet-apps
+#   annotations:
+#     kubernetes.io/ingress.class: nginx
+#     nginx.ingress.kubernetes.io/ssl-redirect: "true" # Force le HTTPS
+# spec:
+#   tls:
+#   - hosts:
+#     - webmvc.local        # Le nom de domaine que tu utiliseras
+#     secretName: webmvc-tls # Le nom du secret qu'on va créer
+#   rules:
+#   - host: webmvc.local
+#     http:
+#       paths:
+#       - path: /
+#         pathType: Prefix
+#         backend:
+#           service:
+#             name: webmvc # Doit correspondre au nom du Service ci-dessus
+#             port:
+#               number: 80
