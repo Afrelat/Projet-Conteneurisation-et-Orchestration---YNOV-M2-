@@ -1,0 +1,40 @@
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: mon-app-ingress
+#   annotations:
+#     # On indique à NGINX de rediriger automatiquement le HTTP vers le HTTPS
+#     nginx.ingress.kubernetes.io/ssl-redirect: "true"
+# spec:
+#   ingressClassName: nginx
+#   tls:
+#   - hosts:
+#     - mon-app.local     # <------------------------------------ !!! changer par l'ip du cluster !!!
+#     secretName: mon-app-tls # Le nom du secret créé à l'étape 2
+#   rules:
+#   - host: mon-app.local
+#     http:
+#       paths:
+#       - path: /
+#         pathType: Prefix
+#         backend:
+#           service:
+#             name: mon-service-backend # Le nom de ton Service K8s
+#             port:
+#               number: 80
+
+#Besoin d'info mdrrr 
+
+# code a tester 
+
+# etape 1 : 
+
+# openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+#   -keyout tls.key -out tls.crt \
+#   -subj "/CN=mon-app.local"
+
+# etape 2 : 
+
+# kubectl create secret tls mon-app-tls \
+#   --key tls.key \
+#   --cert tls.crt
