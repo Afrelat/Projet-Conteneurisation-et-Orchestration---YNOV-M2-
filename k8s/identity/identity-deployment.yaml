@@ -19,7 +19,7 @@ spec:
         imagePullPolicy: Always
         # Réduction du sleep : 60s était trop long et déclenchait les échecs des sondes
         command: ["/bin/sh", "-c"]
-        args: ["sleep 10; dotnet identity.api.dll"]
+        args: ["sleep 60; dotnet Identity.Api.dll"]
         env:
         - name: ASPNETCORE_ENVIRONMENT
           value: "Development"
