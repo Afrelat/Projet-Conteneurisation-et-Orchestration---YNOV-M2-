@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: user-data
+  namespace: ns-data
+spec:
+  serviceName: user-data
+  replicas: 1
+  selector:
+    matchLabels:
+      app: user-data
+  template:
+    metadata:
+      labels:
+        app: user-data
+    spec:
+      containers:
+      - name: user-data
+        image: warshall/user-data:v2.0.0 
+        imagePullPolicy: Always
+        # --- AJOUT CRUCIAL ICI ---
+        securityContext:
+          runAsUser: 0
+        # ------------------------
+        ports:
+        - containerPort: 1433
+          name: sql-port
+        env:
+        - name: ACCEPT_EULA
+          value: "Y"
+        - name: SA_PASSWORD
+          value: "Pass@word"
+        - name: MSSQL_TCP_PORT
+          value: "1433"
+        
+        readinessProbe:
+          exec:
+            command:
+              - /opt/mssql-tools/bin/sqlcmd
+              - -S
+              - localhost
+              - -U
+              - sa
+              - -P
+              - Pass@word
+              - -Q
+              - "SELECT 1"
+          initialDelaySeconds: 40
+          periodSeconds: 10
+
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "2000Mi" 
+          limits:
+            cpu: "1"
+            memory: "2000Mi"
+            
+        volumeMounts:
+        - name: user-storage
+          mountPath: /var/opt/mssql
+  volumeClaimTemplates:
+  - metadata:
+      name: user-storage
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 5Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-data
+  namespace: ns-data
+spec:
+  type: ClusterIP
+  ports:
+  - port: 1433
+    targetPort: 1433
+    name: sql-port
+  selector:
+    app: user-data

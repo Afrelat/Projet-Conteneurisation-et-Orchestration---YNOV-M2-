@@ -15,6 +15,7 @@ $METRICS_PATH    = "k8s/metrics_server/component.yaml"
 $EFK_PATH        = "k8s/efk/efk-stack.yaml"
 $PROM_PATH       = "k8s/prometheus/prometheus.yaml"
 $GRAF_PATH       = "k8s/grafana/grafana.yaml"
+$USER_DATA_PATH = "k8s/sql/user-data-deployment.yaml" # <--- AJOUTER CECI
 
 Write-Host "`n=======================================================" -ForegroundColor Cyan
 Write-Host "   DÉPLOIEMENT COMPLET : OBSERVABILITÉ + MICROSERVICES   " -ForegroundColor Cyan
@@ -40,6 +41,7 @@ Write-Host "`n[1/4] Déploiement Infrastructure (SQL, NoSQL, EFK, Prometheus)...
 try { kubectl apply -f $METRICS_PATH } catch {} 
 
 kubectl apply -f $SQL_PATH -n $NS_DATA
+kubectl apply -f $USER_DATA_PATH -n $NS_DATA # <--- AJOUTER CECI
 kubectl apply -f $REDIS_PATH -n $NS_DATA
 kubectl apply -f $RABBIT_PATH -n $NS_DATA
 kubectl apply -f $EFK_PATH -n $NS_MON
@@ -50,7 +52,7 @@ Write-Host "Attente de l'infrastructure critique (SQL & RabbitMQ)..." -Foregroun
 # On attend que les pods soient 'Running'
 kubectl wait --for=condition=ready pod -l app=sql-data -n $NS_DATA --timeout=300s
 kubectl wait --for=condition=ready pod -l app=rabbitmq -n $NS_DATA --timeout=300s
-
+kubectl wait --for=condition=ready pod -l app=user-data -n $NS_DATA --timeout=300s # <--- AJOUTER CECI
 # --- PAUSE CRITIQUE ---
 # SQL Server est "Running" mais il met ~30s à initialiser les tables.
 # On ajoute une pause ici pour garantir que les APIs ne crashent pas au lancement.
