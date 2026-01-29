@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: sql-data
+  labels:
+    app: sql-data
+spec:
+  type: {{ .Values.sql.service.type }}
+  ports:
+    - port: {{ .Values.sql.service.port }}
+      targetPort: {{ .Values.sql.service.port }}
+  selector:
+    app: sql-data

@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: applicants-api
+  labels:
+    app: applicants-api
+spec:
+  replicas: {{ .Values.applicants.replicas }}
+  selector:
+    matchLabels:
+      app: applicants-api
+  template:
+    metadata:
+      labels:
+        app: applicants-api
+    spec:
+      affinity:
+        podAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - sql-data
+                topologyKey: "kubernetes.io/hostname"
+      containers:
+        - name: applicants-api
+          image: "{{ .Values.images.applicants.repository }}:{{ .Values.images.applicants.tag }}"
+          imagePullPolicy: {{ .Values.images.pullPolicy }}
+          env:
+            - name: ApiSettings__ConnectionString
+              value: {{ .Values.applicants.env.connectionString | quote }}
+            - name: ApiSettings__RedisConnectionString
+              value: {{ .Values.applicants.env.redisConnectionString | quote }}
+            - name: RabbitMq__Host
+              value: {{ .Values.applicants.env.rabbitmqHost | quote }}
+            - name: ApiSettings__HostRabbitmq
+              value: {{ .Values.applicants.env.rabbitmqHost | quote }}
+            - name: ASPNETCORE_URLS
+              value: {{ .Values.applicants.env.aspnetcoreUrls | quote }}
+          ports:
+            - containerPort: {{ .Values.applicants.containerPort }}
+          resources:
+            requests:
+              cpu: {{ .Values.applicants.resources.requests.cpu | quote }}
+              memory: {{ .Values.applicants.resources.requests.memory | quote }}
+            limits:
+              cpu: {{ .Values.applicants.resources.limits.cpu | quote }}
+              memory: {{ .Values.applicants.resources.limits.memory | quote }}

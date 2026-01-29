@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: sql-data
+  labels:
+    app: sql-data
+spec:
+  serviceName: sql-data
+  replicas: {{ .Values.sql.replicas }}
+  selector:
+    matchLabels:
+      app: sql-data
+  template:
+    metadata:
+      labels:
+        app: sql-data
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - sql-data
+                topologyKey: "kubernetes.io/hostname"
+      containers:
+        - name: sql-data
+          image: "{{ .Values.images.sql.repository }}:{{ .Values.images.sql.tag }}"
+          imagePullPolicy: {{ .Values.images.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.sql.service.port }}
+          env:
+            - name: ACCEPT_EULA
+              value: {{ .Values.sql.env.acceptEula | quote }}
+            - name: SA_PASSWORD
+              value: {{ .Values.sql.env.saPassword | quote }}
+          resources:
+            requests:
+              cpu: {{ .Values.sql.resources.requests.cpu | quote }}
+              memory: {{ .Values.sql.resources.requests.memory | quote }}
+            limits:
+              cpu: {{ .Values.sql.resources.limits.cpu | quote }}
+              memory: {{ .Values.sql.resources.limits.memory | quote }}
+          volumeMounts:
+            - name: sql-storage
+              mountPath: /var/opt/mssql
+  volumeClaimTemplates:
+    - metadata:
+        name: sql-storage
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: {{ .Values.sql.storage.size | quote }}

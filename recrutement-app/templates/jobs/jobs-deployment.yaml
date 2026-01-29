@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jobs-api
+  labels:
+    app: jobs-api
+spec:
+  replicas: {{ .Values.jobs.replicas }}
+  selector:
+    matchLabels:
+      app: jobs-api
+  template:
+    metadata:
+      labels:
+        app: jobs-api
+    spec:
+      containers:
+        - name: jobs-api
+          image: "{{ .Values.images.jobs.repository }}:{{ .Values.images.jobs.tag }}"
+          imagePullPolicy: {{ .Values.images.pullPolicy }}
+          env:
+            - name: ApiSettings__ConnectionString
+              value: {{ .Values.jobs.env.connectionString | quote }}
+            - name: ApiSettings__RedisConnectionString
+              value: {{ .Values.jobs.env.redisConnectionString | quote }}
+            - name: RabbitMq__Host
+              value: {{ .Values.jobs.env.rabbitmqHost | quote }}
+            - name: ApiSettings__HostRabbitmq
+              value: {{ .Values.jobs.env.rabbitmqHost | quote }}
+            - name: ASPNETCORE_URLS
+              value: {{ .Values.jobs.env.aspnetcoreUrls | quote }}
+          ports:
+            - containerPort: {{ .Values.jobs.containerPort }}
+          resources:
+            requests:
+              cpu: {{ .Values.jobs.resources.requests.cpu | quote }}
+              memory: {{ .Values.jobs.resources.requests.memory | quote }}
+            limits:
+              cpu: {{ .Values.jobs.resources.limits.cpu | quote }}
+              memory: {{ .Values.jobs.resources.limits.memory | quote }}

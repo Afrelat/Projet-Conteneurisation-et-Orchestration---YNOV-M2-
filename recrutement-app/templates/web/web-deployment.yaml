@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: recrutement-app-web
+  labels:
+    app: webmvc
+spec:
+  replicas: {{ ternary .Values.web.hpa.minReplicas .Values.web.replicas .Values.web.hpa.enabled }}
+  selector:
+    matchLabels:
+      app: webmvc
+  template:
+    metadata:
+      labels:
+        app: webmvc
+    spec:
+{{- if ((.Values.web.affinity | default dict).enabled | default false) }}
+      affinity:
+        podAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: {{ .Values.web.affinity.weight | default 100 }}
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+{{- range (.Values.web.affinity.targetApps | default list) }}
+                        - {{ . | quote }}
+{{- end }}
+                topologyKey: {{ .Values.web.affinity.topologyKey | default "kubernetes.io/hostname" | quote }}
+{{- end }}
+      containers:
+        - name: webmvc
+          image: "{{ .Values.images.web.repository }}:{{ .Values.images.web.tag }}"
+          imagePullPolicy: {{ .Values.images.pullPolicy }}
+          env:
+            - name: IdentityUrl
+              value: {{ .Values.web.env.identityUrl | quote }}
+            - name: ApplicantsUrl
+              value: {{ .Values.web.env.applicantsUrl | quote }}
+            - name: JobsUrl
+              value: {{ .Values.web.env.jobsUrl | quote }}
+            - name: ASPNETCORE_ENVIRONMENT
+              value: {{ .Values.web.env.aspnetcoreEnvironment | quote }}
+          ports:
+            - containerPort: {{ .Values.web.containerPort }}
+          resources:
+            requests:
+              cpu: {{ .Values.web.resources.requests.cpu | quote }}
+              memory: {{ .Values.web.resources.requests.memory | quote }}
+            limits:
+              cpu: {{ .Values.web.resources.limits.cpu | quote }}
+              memory: {{ .Values.web.resources.limits.memory | quote }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.web.livenessProbe.path | quote }}
+              port: {{ .Values.web.containerPort }}
+            initialDelaySeconds: {{ .Values.web.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.web.livenessProbe.periodSeconds }}

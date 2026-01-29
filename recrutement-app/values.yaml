@@ -1,31 +1,219 @@
-replicaCount: 2
+# =========================
+# Global
+# =========================
+namespace: projet-apps
 
-image:
-  repository: nginx
-  tag: "1.16.0"
+images:
   pullPolicy: IfNotPresent
 
-service:
-  type: ClusterIP
-  port: 80
+  web:
+    repository: warshall/webmvc
+    tag: v1.0.0
 
-serviceAccount:
-  create: true
-  name: ""
+  applicants:
+    repository: warshall/applicants-api
+    tag: v1.0.0
 
-resources:
-  limits:
-    cpu: "500m"
-    memory: "256Mi"
-  requests:
-    cpu: "250m"
-    memory: "128Mi"
+  jobs:
+    repository: warshall/jobs-api
+    tag: v1.0.0
 
-autoscaling:
-  enabled: false
-  minReplicas: 2
-  maxReplicas: 5
-  targetCPUUtilizationPercentage: 70
+  identity:
+    repository: warshall/identity-api
+    tag: v1.0.0
 
-ingress:
-  enabled: false
+  sql:
+    repository: warshall/sql-data
+    tag: v1.0.0
+
+  rabbitmq:
+    repository: rabbitmq
+    tag: 3-management
+
+  redis:
+    repository: redis
+    tag: 6-alpine
+
+
+# =========================
+# Web MVC
+# =========================
+web:
+  replicas: 1
+  containerPort: 80
+
+  service:
+    type: ClusterIP
+    port: 80
+
+  env:
+    identityUrl: "http://identity-api.projet-apps.svc.cluster.local"
+    applicantsUrl: "http://applicants-api.projet-apps.svc.cluster.local"
+    jobsUrl: "http://jobs-api.projet-apps.svc.cluster.local"
+    aspnetcoreEnvironment: "Development"
+
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "900Mi"
+    limits:
+      cpu: "1"
+      memory: "2000Mi"
+
+  livenessProbe:
+    path: "/"
+    initialDelaySeconds: 60
+    periodSeconds: 10
+
+  affinity:
+    enabled: false
+    weight: 100
+    topologyKey: "kubernetes.io/hostname"
+    targetApps:
+      - jobs-api
+      - applicants-api
+
+  hpa:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 5
+    cpuAverageUtilization: 20
+
+
+# =========================
+# Applicants API
+# =========================
+applicants:
+  replicas: 1
+  containerPort: 8080
+
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 8080
+
+  env:
+    connectionString: "Server=sql-data;User=sa;Password=Pass@word;Database=dotnetgigs.applicants;"
+    redisConnectionString: "redis:6379"
+    rabbitmqHost: "rabbitmq"
+    aspnetcoreUrls: "Development"
+
+  resources:
+    requests:
+      cpu: "0.5"
+      memory: "500Mi"
+    limits:
+      cpu: "1"
+      memory: "1500Mi"
+
+
+# =========================
+# Jobs API
+# =========================
+jobs:
+  replicas: 1
+  containerPort: 8080
+
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 8080
+
+  env:
+    connectionString: "Server=sql-data;User=sa;Password=Pass@word;Database=dotnetgigs.jobs;"
+    redisConnectionString: "redis:6379"
+    rabbitmqHost: "rabbitmq"
+    aspnetcoreUrls: "Development"
+
+  resources:
+    requests:
+      cpu: "0.5"
+      memory: "500Mi"
+    limits:
+      cpu: "1"
+      memory: "1500Mi"
+
+
+# =========================
+# Identity API
+# =========================
+identity:
+  replicas: 1
+  containerPort: 80
+
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 80
+
+  env:
+    connectionString: "Server=sql-data;Database=Microsoft.eShopOnContainers.Services.IdentityDb;User Id=sa;Password=Pass@word;"
+    redisConnectionString: "redis:6379"
+    rabbitmqHost: "rabbitmq"
+    aspnetcoreUrls: "Development"
+
+  resources:
+    requests:
+      cpu: "0.5"
+      memory: "800Mi"
+    limits:
+      cpu: "1"
+      memory: "1500Mi"
+
+
+# =========================
+# RabbitMQ
+# =========================
+rabbitmq:
+  replicas: 1
+
+  service:
+    type: ClusterIP
+    amqpPort: 5672
+    managementPort: 15672
+
+  env:
+    user: "guest"
+    pass: "guest"
+
+
+# =========================
+# Redis
+# =========================
+redis:
+  replicas: 1
+
+  service:
+    type: ClusterIP
+    port: 6379
+
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "100Mi"
+
+
+# =========================
+# SQL Server
+# =========================
+sql:
+  replicas: 1
+
+  service:
+    type: ClusterIP
+    port: 1433
+
+  env:
+    acceptEula: "Y"
+    saPassword: "Pass@word"
+
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1500Mi"
+    limits:
+      cpu: "1000m"
+      memory: "2000Mi"
+
+  storage:
+    size: 5Gi

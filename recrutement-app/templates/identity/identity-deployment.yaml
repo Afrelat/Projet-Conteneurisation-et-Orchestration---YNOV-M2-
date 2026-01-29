@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: identity-api
+  labels:
+    app: identity-api
+spec:
+  replicas: {{ .Values.identity.replicas }}
+  selector:
+    matchLabels:
+      app: identity-api
+  template:
+    metadata:
+      labels:
+        app: identity-api
+    spec:
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - sql-data
+              topologyKey: "kubernetes.io/hostname"
+      containers:
+        - name: identity-api
+          image: "{{ .Values.images.identity.repository }}:{{ .Values.images.identity.tag }}"
+          imagePullPolicy: {{ .Values.images.pullPolicy }}
+          env:
+            - name: ApiSettings__ConnectionString
+              value: {{ .Values.identity.env.connectionString | quote }}
+            - name: ApiSettings__RedisConnectionString
+              value: {{ .Values.identity.env.redisConnectionString | quote }}
+            - name: RabbitMq__Host
+              value: {{ .Values.identity.env.rabbitmqHost | quote }}
+            - name: ApiSettings__HostRabbitmq
+              value: {{ .Values.identity.env.rabbitmqHost | quote }}
+            - name: ASPNETCORE_URLS
+              value: {{ .Values.identity.env.aspnetcoreUrls | quote }}
+          ports:
+            - containerPort: {{ .Values.identity.containerPort }}
+          resources:
+            requests:
+              cpu: {{ .Values.identity.resources.requests.cpu | quote }}
+              memory: {{ .Values.identity.resources.requests.memory | quote }}
+            limits:
+              cpu: {{ .Values.identity.resources.limits.cpu | quote }}
+              memory: {{ .Values.identity.resources.limits.memory | quote }}
