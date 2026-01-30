@@ -317,3 +317,12 @@ OpenCover/
 
 # Azure Stream Analytics local run output 
 ASALocalRun/
+
+# Certificats et clés TLS
+*.key
+*.crt
+*.pem
+*.pfx
+
+# Secrets Kubernetes contenant des données sensibles
+secret.yaml

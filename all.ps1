@@ -19,6 +19,7 @@ $GRAF_PATH       = "k8s/grafana/grafana.yaml"
 $USER_DATA_PATH = "k8s/sql/user-data-deployment.yaml" # <--- AJOUTER CECI
 $SECRET_PATH     = "k8s/web/secret.yaml"
 $INGRESS_PATH    = "k8s/ingress-nginx/ingress-nginx.yaml"
+$LOADTESTER_PATH = "k8s/rbac-load-tester/rbac-load-tester.yaml"
 
 Write-Host "`n=======================================================" -ForegroundColor Cyan
 Write-Host "   DÉPLOIEMENT COMPLET : OBSERVABILITÉ + MICROSERVICES   " -ForegroundColor Cyan
@@ -70,6 +71,7 @@ kubectl apply -f $JOBS_PATH -n $NS_APP
 kubectl apply -f $APPLICANTS_PATH -n $NS_APP
 kubectl apply -f $WEB_PATH -n $NS_APP
 kubectl apply -f $SECRET_PATH -n $NS_APP
+kubectl apply -f $LOADTESTER_PATH -n $NS_APP
 
 Write-Host "Attente du démarrage des Microservices (Sondes Readiness)..." -ForegroundColor Gray
 # Grâce aux readinessProbes dans tes YAML, cette commande attendra que les APIs soient VRAIMENT prêtes

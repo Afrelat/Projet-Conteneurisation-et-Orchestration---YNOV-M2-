@@ -85,6 +85,22 @@ spec:
       target:
         type: Utilization
         averageUtilization: 60 # Seuil réglé à 60% pour déclencher le test facilement
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: webmvc-lb
+  namespace: projet-apps
+spec:
+  selector:
+    app: webmvc
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+  type: LoadBalancer
+---
+
 # --- NOUVELLE PARTIE : INGRESS POUR LE HTTPS ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -98,7 +114,7 @@ spec:
   ingressClassName: nginx
   tls:
   - hosts:
-    - localhost #webmvc.local        # Le nom de domaine que tu utiliseras
+    - localhost         # Le nom de domaine que tu utiliseras
     secretName: webmvc-tls # Le nom du secret qu'on va créer
   rules:
   - host: localhost #webmvc.local
