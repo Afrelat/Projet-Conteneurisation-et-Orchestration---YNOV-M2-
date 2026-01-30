@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: applicants-api
+  labels:
+    app: applicants-api
+spec:
+  replicas: {{ .Values.applicants.replicas }}
+  selector:
+    matchLabels:
+      app: applicants-api
+  template:
+    metadata:
+      labels:
+        app: applicants-api
+    spec:
+      {{- if .Values.applicants.affinity.enabled }}
+      affinity:
+        podAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - {{ .Values.applicants.affinity.targetAppLabel | quote }}
+                topologyKey: "kubernetes.io/hostname"
+      {{- end }}
+      containers:
+        - name: applicants-api
+          image: "{{ .Values.images.applicants.repository }}:{{ .Values.images.applicants.tag }}"
+          imagePullPolicy: {{ .Values.images.pullPolicy }}
+          command: ["/bin/sh", "-c"]
+          args: ["sleep {{ .Values.applicants.startupSleepSeconds }}; dotnet applicants.api.dll"]
+
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              value: {{ .Values.applicants.env.environment | quote }}
+            - name: ASPNETCORE_URLS
+              value: {{ .Values.applicants.env.aspnetcoreUrls | quote }}
+
+            # Connection strings (comme ton YAML k8s)
+            - name: ConnectionString
+              value: {{ .Values.applicants.env.connectionString | quote }}
+            - name: ApiSettings__ConnectionString
+              value: {{ .Values.applicants.env.connectionString | quote }}
+
+            - name: ApiSettings__RedisConnectionString
+              value: {{ .Values.applicants.env.redisConnectionString | quote }}
+
+            # RabbitMQ (comme ton YAML k8s)
+            - name: RabbitMq__Host
+              value: {{ .Values.applicants.env.rabbitmqHost | quote }}
+            - name: ApiSettings__HostRabbitmq
+              value: {{ .Values.applicants.env.rabbitmqHost | quote }}
+            - name: HostRabbitmq
+              value: {{ .Values.applicants.env.rabbitmqHost | quote }}
+
+          ports:
+            - containerPort: {{ .Values.applicants.containerPort }}
+
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.applicants.containerPort }}
+            initialDelaySeconds: {{ .Values.applicants.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.applicants.readinessProbe.periodSeconds }}
+
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.applicants.containerPort }}
+            initialDelaySeconds: {{ .Values.applicants.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.applicants.livenessProbe.periodSeconds }}
+
+          resources:
+            requests:
+              cpu: {{ .Values.applicants.resources.requests.cpu | quote }}
+              memory: {{ .Values.applicants.resources.requests.memory | quote }}
+            limits:
+              cpu: {{ .Values.applicants.resources.limits.cpu | quote }}
+              memory: {{ .Values.applicants.resources.limits.memory | quote }}

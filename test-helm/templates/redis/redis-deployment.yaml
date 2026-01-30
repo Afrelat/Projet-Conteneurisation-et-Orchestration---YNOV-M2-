@@ -1,0 +1,33 @@
+{{- if .Values.redis.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis
+  namespace: {{ .Values.namespaces.data | default "ns-data" }}
+  labels:
+    app: redis
+spec:
+  serviceName: redis
+  replicas: {{ .Values.redis.replicas | default 1 }}
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+        - name: redis
+          image: "{{ .Values.images.redis.repository | default "redis" }}:{{ .Values.images.redis.tag | default "6-alpine" }}"
+          imagePullPolicy: {{ .Values.images.pullPolicy | default "IfNotPresent" }}
+          ports:
+            - containerPort: {{ .Values.redis.containerPort | default 6379 }}
+          resources:
+            requests:
+              cpu: {{ .Values.redis.resources.requests.cpu | default "100m" | quote }}
+              memory: {{ .Values.redis.resources.requests.memory | default "100Mi" | quote }}
+            limits:
+              cpu: {{ .Values.redis.resources.limits.cpu | default "200m" | quote }}
+              memory: {{ .Values.redis.resources.limits.memory | default "256Mi" | quote }}
+{{- end }}

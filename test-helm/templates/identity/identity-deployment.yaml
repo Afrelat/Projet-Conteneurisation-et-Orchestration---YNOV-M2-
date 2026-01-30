@@ -1,0 +1,69 @@
+{{- if .Values.identity.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: identity-api
+  namespace: {{ .Values.namespaces.apps | default "projet-apps" }}
+  labels:
+    app: identity-api
+spec:
+  replicas: {{ .Values.identity.replicas | default 1 }}
+  selector:
+    matchLabels:
+      app: identity-api
+  template:
+    metadata:
+      labels:
+        app: identity-api
+    spec:
+      containers:
+        - name: identity-api
+          image: "{{ .Values.images.identity.repository | default "warshall/identity-api" }}:{{ .Values.images.identity.tag | default "v2.2.0" }}"
+          imagePullPolicy: {{ .Values.images.pullPolicy | default "Always" }}
+          command: ["/bin/sh", "-c"]
+          args: ["sleep {{ .Values.identity.startupSleepSeconds | default 60 }}; dotnet Identity.Api.dll"]
+
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              value: {{ .Values.identity.env.environment | default "Development" | quote }}
+            - name: ASPNETCORE_URLS
+              value: {{ .Values.identity.env.aspnetcoreUrls | default "http://+:80" | quote }}
+
+            - name: ConnectionString
+              value: {{ .Values.identity.env.connectionString | quote }}
+            - name: ApiSettings__ConnectionString
+              value: {{ .Values.identity.env.connectionString | quote }}
+
+            - name: ApiSettings__RedisConnectionString
+              value: {{ .Values.identity.env.redisConnectionString | quote }}
+
+            - name: RabbitMq__Host
+              value: {{ .Values.identity.env.rabbitmqHost | quote }}
+            - name: ApiSettings__HostRabbitmq
+              value: {{ .Values.identity.env.rabbitmqHost | quote }}
+            - name: HostRabbitmq
+              value: {{ .Values.identity.env.rabbitmqHost | quote }}
+
+          ports:
+            - containerPort: {{ .Values.identity.containerPort | default 80 }}
+
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.identity.containerPort | default 80 }}
+            initialDelaySeconds: {{ .Values.identity.readinessProbe.initialDelaySeconds | default 30 }}
+            periodSeconds: {{ .Values.identity.readinessProbe.periodSeconds | default 10 }}
+
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.identity.containerPort | default 80 }}
+            initialDelaySeconds: {{ .Values.identity.livenessProbe.initialDelaySeconds | default 90 }}
+            periodSeconds: {{ .Values.identity.livenessProbe.periodSeconds | default 20 }}
+
+          resources:
+            requests:
+              cpu: {{ .Values.identity.resources.requests.cpu | default "500m" | quote }}
+              memory: {{ .Values.identity.resources.requests.memory | default "500Mi" | quote }}
+            limits:
+              cpu: {{ .Values.identity.resources.limits.cpu | default "1" | quote }}
+              memory: {{ .Values.identity.resources.limits.memory | default "1500Mi" | quote }}
+{{- end }}
