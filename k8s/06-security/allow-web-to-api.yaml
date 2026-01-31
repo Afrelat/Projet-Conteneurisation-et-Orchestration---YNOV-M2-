@@ -1,0 +1,23 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-web-to-api
+  namespace: projet-apps
+spec:
+  # Cette règle protège les 3 APIs
+  podSelector:
+    matchExpressions:
+      - key: app
+        operator: In
+        values: ["identity-api", "jobs-api", "applicants-api"]
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    # Seul le pod avec le label 'app: webmvc' a le droit d'entrer
+    - podSelector:
+        matchLabels:
+          app: webmvc
+    ports:
+    - protocol: TCP
+      port: 80

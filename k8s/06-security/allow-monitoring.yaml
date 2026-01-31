@@ -1,0 +1,18 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-prometheus-scraping
+  namespace: projet-apps
+spec:
+  podSelector: {} # Tous les pods de l'app
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    # Autoriser le namespace de monitoring
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: ns-monitoring
+    ports:
+    - protocol: TCP
+      port: 80
