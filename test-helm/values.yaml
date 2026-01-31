@@ -318,7 +318,7 @@ web:
 
   # Par défaut OFF : ingress nécessite un ingress controller installé
   ingress:
-    enabled: false
+    enabled: true
     className: "nginx"
     sslRedirect: "true"
     host: "localhost"
@@ -433,4 +433,4 @@ monitoring:
 # INGRESS CONTROLLER (optionnel)
 # =========================
 ingressNginx:
-  enabled: false
+  enabled: true
