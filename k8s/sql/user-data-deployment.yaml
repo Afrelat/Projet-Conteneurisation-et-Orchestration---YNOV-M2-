@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: user-data
-        image: warshall/user-data:v2.0.0 
+        image: warshall/user-data:v3.0.2
         imagePullPolicy: Always
         # --- AJOUT CRUCIAL ICI ---
         securityContext:

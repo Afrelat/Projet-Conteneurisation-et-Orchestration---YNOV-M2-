@@ -92,7 +92,7 @@ foreach ($name in $apps.Keys) {
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "`$Host.UI.RawUI.WindowTitle='PF RabbitMQ Admin'; kubectl port-forward service/rabbitmq 15672:15672 -n $NS_DATA"
 
 # Monitoring (Kibana, Prometheus, Grafana)
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "`$Host.UI.RawUI.WindowTitle='PF Kibana'; kubectl port-forward service/kibana 5601:5601 -n $NS_MON"
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "`$Host.UI.RawUI.WindowTitle='PF Kibana'; kubectl port-forward service/kibana 8085:5601 -n $NS_MON"
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "`$Host.UI.RawUI.WindowTitle='PF Prometheus'; kubectl port-forward service/prometheus-service 9090:9090 -n $NS_MON"
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "`$Host.UI.RawUI.WindowTitle='PF Grafana'; kubectl port-forward service/grafana-service 3000:3000 -n $NS_MON"
 # Ajoute ceci dans la section "OUVERTURE DES ACCÈS" de ton script
