@@ -76,7 +76,7 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: webmvc
-  minReplicas: 2
+  minReplicas: 1
   maxReplicas: 5
   metrics:
   - type: Resource
@@ -85,6 +85,7 @@ spec:
       target:
         type: Utilization
         averageUtilization: 60 # Seuil réglé à 60% pour déclencher le test facilement
+---
 # --- NOUVELLE PARTIE : INGRESS POUR LE HTTPS ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
