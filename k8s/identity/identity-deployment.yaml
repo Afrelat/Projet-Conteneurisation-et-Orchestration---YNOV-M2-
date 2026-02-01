@@ -32,8 +32,8 @@ spec:
         - name: ApiSettings__ConnectionString
           value: "Server=user-data.ns-data;Database=Microsoft.eShopOnContainers.Services.IdentityDb;User Id=sa;Password=Pass@word;TrustServerCertificate=True;Connect Timeout=60;"
 
-        - name: ApiSettings__RedisConnectionString
-          value: "redis.ns-data:6379"
+        - name: RedisHost
+          value: "redis.ns-data.svc.cluster.local:6379"
 
         # RÉSEAU : FQDN complet pour joindre le namespace ns-data
         - name: RabbitMq__Host
