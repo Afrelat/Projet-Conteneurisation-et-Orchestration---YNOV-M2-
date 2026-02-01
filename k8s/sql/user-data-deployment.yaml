@@ -16,40 +16,33 @@ spec:
     spec:
       containers:
       - name: user-data
-        image: mcr.microsoft.com/mssql/server:2019-latest 
+        image: redis:7-alpine
         imagePullPolicy: Always
-        # --- AJOUT CRUCIAL ICI ---
-        securityContext:
-          runAsUser: 0
-        # ------------------------
         ports:
-        - containerPort: 1433
-          name: sql-port
-        env:
-        - name: ACCEPT_EULA
-          value: "Y"
-        - name: SA_PASSWORD
-          value: "Pass@word"
-        - name: MSSQL_TCP_PORT
-          value: "1433"
-        
+        - containerPort: 6379
+          name: redis
+        # Persistance (optionnelle mais bien pour le rendu)
+        args: ["--appendonly", "yes"]
         readinessProbe:
           tcpSocket:
-            port: 1433
-          initialDelaySeconds: 30
+            port: 6379
+          initialDelaySeconds: 5
           periodSeconds: 10
-
+        livenessProbe:
+          tcpSocket:
+            port: 6379
+          initialDelaySeconds: 15
+          periodSeconds: 20
         resources:
           requests:
-            cpu: "250m"
-            memory: "700Mi" 
+            cpu: "50m"
+            memory: "128Mi"
           limits:
-            cpu: "1"
-            memory: "1500Mi"
-            
+            cpu: "250m"
+            memory: "512Mi"
         volumeMounts:
         - name: user-storage
-          mountPath: /var/opt/mssql
+          mountPath: /data
   volumeClaimTemplates:
   - metadata:
       name: user-storage
@@ -57,7 +50,7 @@ spec:
       accessModes: ["ReadWriteOnce"]
       resources:
         requests:
-          storage: 5Gi
+          storage: 1Gi
 ---
 apiVersion: v1
 kind: Service
@@ -67,8 +60,8 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-  - port: 1433
-    targetPort: 1433
-    name: sql-port
+  - port: 6379
+    targetPort: 6379
+    name: redis
   selector:
     app: user-data
