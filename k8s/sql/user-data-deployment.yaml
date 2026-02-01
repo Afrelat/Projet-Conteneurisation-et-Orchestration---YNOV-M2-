@@ -29,7 +29,7 @@ spec:
         - name: ACCEPT_EULA
           value: "Y"
         - name: SA_PASSWORD
-          value: "Pass@word123!"
+          value: "Pass@word"
         - name: MSSQL_TCP_PORT
           value: "1433"
         

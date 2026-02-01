@@ -1,14 +1,14 @@
 # --- CONFIGURATION MISE A JOUR ---
 $DOCKER_USER = "warshall"
-$VERSION = "v1.0.0"
+$VERSION = "v3.0.0"
 $IMAGES = @(
     # @{ Name = "webmvc";         Path = "Web/Dockerfile" },
     # @{ Name = "applicants-api"; Path = "Services/Applicants.Api/Dockerfile" },
     # @{ Name = "jobs-api";       Path = "Services/Jobs.Api/Dockerfile" },
     # @{ Name = "identity-api";   Path = "Services/Identity.Api/Dockerfile" }
-    @{ Name = "user-data";   Path = "Database/docker-user-data/Dockerfile" }
+    # @{ Name = "user-data";   Path = "Database/docker-user-data/Dockerfile" }
     # CORRECTION ICI : Le dossier s'appelle "Database" sur ton image
-    # @{ Name = "sql-data";       Path = "Database/Dockerfile" } 
+    @{ Name = "sql-data";       Path = "Database/Dockerfile" } 
     # @{ Name = "kibana";       Path = "logging/kibana/Dockerfile" } 
     # @{ Name = "fluent-bit";       Path = "logging/fluent-bit/Dockerfile" } 
     # @{ Name = "elasticsearch";       Path = "logging/elasticsearch/Dockerfile" } 

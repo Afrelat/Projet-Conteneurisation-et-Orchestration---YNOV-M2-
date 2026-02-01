@@ -16,9 +16,11 @@ spec:
     spec:
       containers:
         - name: sql-data
-          image: warshall/sql-data:v2.0.0 
+          # image: warshall/sql-data:v2.0.0
+          image: iptissem/sql-data-prof:1.1
           imagePullPolicy: Always
-          # --- AUTOMATISATION DE LA CRÉATION DES BASES ---
+
+          # --- INITIALISATION SQL ROBUSTE ---
           lifecycle:
             postStart:
               exec:
@@ -26,12 +28,24 @@ spec:
                   - /bin/sh
                   - -c
                   - |
-                    sleep 30;
-                    /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P Pass@word -Q "IF DB_ID('Microsoft.eShopOnContainers.Services.IdentityDb') IS NULL CREATE DATABASE [Microsoft.eShopOnContainers.Services.IdentityDb]"
-          # ----------------------------------------------
+                    echo "⏳ Waiting for SQL Server to be ready..."
+                    until /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P Pass@word -Q "SELECT 1" >/dev/null 2>&1
+                    do
+                      sleep 5
+                    done
+
+                    echo "✅ SQL Server is ready, running init script..."
+
+                    /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P Pass@word -Q "
+                    IF DB_ID('dotnetgigs.jobs') IS NULL CREATE DATABASE [dotnetgigs.jobs];
+                    IF DB_ID('dotnetgigs.applicants') IS NULL CREATE DATABASE [dotnetgigs.applicants];
+                    "
+          # ----------------------------------
+
           ports:
             - containerPort: 1433
             - containerPort: 135
+
           env:
             - name: ACCEPT_EULA
               value: "Y"
@@ -41,6 +55,8 @@ spec:
               value: "1433"
             - name: MSSQL_RPC_PORT
               value: "135"
+
+          # --- READINESS = DONNÉES PRÊTES ---
           readinessProbe:
             exec:
               command:
@@ -52,19 +68,24 @@ spec:
                 - -P
                 - Pass@word
                 - -Q
-                - "SELECT 1"  
-            initialDelaySeconds: 60
-            periodSeconds: 20
-          resources: 
+                - "IF DB_ID('dotnetgigs.jobs') IS NOT NULL SELECT 1 ELSE THROW 50000, 'DB not ready', 1"
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 10
+          # --------------------------------
+
+          resources:
             requests:
               cpu: "500m"
               memory: "1500Mi"
             limits:
               cpu: "1000m"
-              memory: "2000Mi" 
+              memory: "2000Mi"
+
           volumeMounts:
             - name: sql-storage
               mountPath: /var/opt/mssql
+
   volumeClaimTemplates:
     - metadata:
         name: sql-storage
@@ -73,6 +94,7 @@ spec:
         resources:
           requests:
             storage: 5Gi
+
 ---
 apiVersion: v1
 kind: Service
