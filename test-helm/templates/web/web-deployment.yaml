@@ -1,9 +1,13 @@
 {{- if .Values.web.enabled }}
+
+{{- $images := .Values.images | default dict -}}
+{{- $webImg := get $images "web" | default dict -}}
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: webmvc
-  namespace: {{ .Values.namespaces.apps | default "projet-apps" }}
+  namespace: {{ .Release.Namespace }}
   labels:
     app: webmvc
 spec:
@@ -16,7 +20,7 @@ spec:
       labels:
         app: webmvc
     spec:
-      {{- if .Values.web.affinity.enabled }}
+      {{- if (and .Values.web.affinity (eq (toString .Values.web.affinity.enabled) "true")) }}
       affinity:
         podAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -31,19 +35,22 @@ spec:
                         - applicants-api
                 topologyKey: "kubernetes.io/hostname"
       {{- end }}
+
       containers:
         - name: webmvc
-          image: "{{ .Values.images.web.repository | default "warshall/webmvc" }}:{{ .Values.images.web.tag | default "v1.0.0" }}"
+          image: "{{ $webImg.repository | default "warshall/webmvc" }}:{{ $webImg.tag | default "v1.0.0" }}"
           imagePullPolicy: {{ .Values.images.pullPolicy | default "Always" }}
+
           env:
             - name: ApiSettings__IdentityApiUrl
-              value: {{ .Values.web.env.identityApiUrl | quote }}
+              value: {{ .Values.web.env.identityApiUrl | default "http://identity-api.projet-apps.svc.cluster.local" | quote }}
             - name: ApiSettings__JobsApiUrl
-              value: {{ .Values.web.env.jobsApiUrl | quote }}
+              value: {{ .Values.web.env.jobsApiUrl | default "http://jobs-api.projet-apps.svc.cluster.local" | quote }}
             - name: ApiSettings__ApplicantsApiUrl
-              value: {{ .Values.web.env.applicantsApiUrl | quote }}
+              value: {{ .Values.web.env.applicantsApiUrl | default "http://applicants-api.projet-apps.svc.cluster.local" | quote }}
             - name: ASPNETCORE_ENVIRONMENT
               value: {{ .Values.web.env.environment | default "Development" | quote }}
+
           ports:
             - containerPort: {{ .Values.web.containerPort | default 80 }}
 
@@ -61,4 +68,5 @@ spec:
               port: {{ .Values.web.containerPort | default 80 }}
             initialDelaySeconds: {{ .Values.web.livenessProbe.initialDelaySeconds | default 60 }}
             periodSeconds: {{ .Values.web.livenessProbe.periodSeconds | default 10 }}
+
 {{- end }}

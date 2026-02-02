@@ -1,9 +1,13 @@
 {{- if .Values.jobs.enabled }}
+
+{{- $images := .Values.images | default dict -}}
+{{- $jobsImg := get $images "jobs" | default dict -}}
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: jobs-api
-  namespace: {{ .Values.namespaces.apps | default "projet-apps" }}
+  namespace: {{ .Release.Namespace }}
   labels:
     app: jobs-api
 spec:
@@ -18,8 +22,8 @@ spec:
     spec:
       containers:
         - name: jobs-api
-          image: "{{ .Values.images.jobs.repository | default "warshall/jobs-api" }}:{{ .Values.images.jobs.tag | default "v2.1.0" }}"
-          imagePullPolicy: {{ .Values.images.pullPolicy | default "Always" }}
+          image: "{{ $jobsImg.repository | default "warshall/jobs-api" }}:{{ $jobsImg.tag | default "v2.1.0" }}"
+          imagePullPolicy: {{ $images.pullPolicy | default "Always" }}
 
           command: ["/bin/sh", "-c"]
           args: ["sleep {{ .Values.jobs.startupSleepSeconds | default 60 }}; dotnet jobs.api.dll"]
@@ -67,4 +71,5 @@ spec:
             limits:
               cpu: {{ .Values.jobs.resources.limits.cpu | default "1" | quote }}
               memory: {{ .Values.jobs.resources.limits.memory | default "1500Mi" | quote }}
+
 {{- end }}

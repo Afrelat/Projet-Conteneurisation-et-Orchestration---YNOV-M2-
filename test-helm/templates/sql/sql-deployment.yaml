@@ -1,4 +1,8 @@
 {{- if .Values.sqlData.enabled }}
+
+{{- $images := .Values.images | default dict -}}
+{{- $sqlDataImg := get $images "sqlData" | default dict -}}
+
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -19,8 +23,8 @@ spec:
     spec:
       containers:
         - name: sql-data
-          image: "{{ .Values.images.sqlData.repository }}:{{ .Values.images.sqlData.tag }}"
-          imagePullPolicy: {{ .Values.images.pullPolicy | default "Always" }}
+          image: "{{ $sqlDataImg.repository | default "iptissem/sql-data-prof" }}:{{ $sqlDataImg.tag | default "1.1" }}"
+          imagePullPolicy: {{ $images.pullPolicy | default "Always" }}
 
           lifecycle:
             postStart:
@@ -82,4 +86,5 @@ spec:
         resources:
           requests:
             storage: {{ .Values.sqlData.persistence.size | default "5Gi" | quote }}
+
 {{- end }}

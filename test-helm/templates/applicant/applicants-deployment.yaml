@@ -1,11 +1,17 @@
+{{- if .Values.applicants.enabled }}
+
+{{- $images := .Values.images | default dict -}}
+{{- $appImg := get $images "applicants" | default dict -}}
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: applicants-api
+  namespace: {{ .Release.Namespace }}
   labels:
     app: applicants-api
 spec:
-  replicas: {{ .Values.applicants.replicas }}
+  replicas: {{ .Values.applicants.replicas | default 1 }}
   selector:
     matchLabels:
       app: applicants-api
@@ -14,7 +20,7 @@ spec:
       labels:
         app: applicants-api
     spec:
-      {{- if .Values.applicants.affinity.enabled }}
+      {{- if (and .Values.applicants.affinity (eq (toString .Values.applicants.affinity.enabled) "true")) }}
       affinity:
         podAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -25,58 +31,60 @@ spec:
                     - key: app
                       operator: In
                       values:
-                        - {{ .Values.applicants.affinity.targetAppLabel | quote }}
+                        - {{ .Values.applicants.affinity.targetAppLabel | default "sql-data" | quote }}
                 topologyKey: "kubernetes.io/hostname"
       {{- end }}
+
       containers:
         - name: applicants-api
-          image: "{{ .Values.images.applicants.repository }}:{{ .Values.images.applicants.tag }}"
-          imagePullPolicy: {{ .Values.images.pullPolicy }}
+          image: "{{ $appImg.repository | default "warshall/applicants-api" }}:{{ $appImg.tag | default "v2.1.0" }}"
+          imagePullPolicy: {{ $images.pullPolicy | default "Always" }}
+
           command: ["/bin/sh", "-c"]
-          args: ["sleep {{ .Values.applicants.startupSleepSeconds }}; dotnet applicants.api.dll"]
+          args: ["sleep {{ .Values.applicants.startupSleepSeconds | default 60 }}; dotnet applicants.api.dll"]
 
           env:
             - name: ASPNETCORE_ENVIRONMENT
-              value: {{ .Values.applicants.env.environment | quote }}
+              value: {{ .Values.applicants.env.environment | default "Development" | quote }}
             - name: ASPNETCORE_URLS
-              value: {{ .Values.applicants.env.aspnetcoreUrls | quote }}
+              value: {{ .Values.applicants.env.aspnetcoreUrls | default "http://+:80" | quote }}
 
-            # Connection strings (comme ton YAML k8s)
             - name: ConnectionString
               value: {{ .Values.applicants.env.connectionString | quote }}
             - name: ApiSettings__ConnectionString
               value: {{ .Values.applicants.env.connectionString | quote }}
 
             - name: ApiSettings__RedisConnectionString
-              value: {{ .Values.applicants.env.redisConnectionString | quote }}
+              value: {{ .Values.applicants.env.redisConnectionString | default "redis.ns-data:6379" | quote }}
 
-            # RabbitMQ (comme ton YAML k8s)
             - name: RabbitMq__Host
-              value: {{ .Values.applicants.env.rabbitmqHost | quote }}
+              value: {{ .Values.applicants.env.rabbitmqHost | default "rabbitmq.ns-data.svc.cluster.local" | quote }}
             - name: ApiSettings__HostRabbitmq
-              value: {{ .Values.applicants.env.rabbitmqHost | quote }}
+              value: {{ .Values.applicants.env.rabbitmqHost | default "rabbitmq.ns-data.svc.cluster.local" | quote }}
             - name: HostRabbitmq
-              value: {{ .Values.applicants.env.rabbitmqHost | quote }}
+              value: {{ .Values.applicants.env.rabbitmqHost | default "rabbitmq.ns-data.svc.cluster.local" | quote }}
 
           ports:
-            - containerPort: {{ .Values.applicants.containerPort }}
+            - containerPort: {{ .Values.applicants.containerPort | default 80 }}
 
           readinessProbe:
             tcpSocket:
-              port: {{ .Values.applicants.containerPort }}
-            initialDelaySeconds: {{ .Values.applicants.readinessProbe.initialDelaySeconds }}
-            periodSeconds: {{ .Values.applicants.readinessProbe.periodSeconds }}
+              port: {{ .Values.applicants.containerPort | default 80 }}
+            initialDelaySeconds: {{ .Values.applicants.readinessProbe.initialDelaySeconds | default 80 }}
+            periodSeconds: {{ .Values.applicants.readinessProbe.periodSeconds | default 10 }}
 
           livenessProbe:
             tcpSocket:
-              port: {{ .Values.applicants.containerPort }}
-            initialDelaySeconds: {{ .Values.applicants.livenessProbe.initialDelaySeconds }}
-            periodSeconds: {{ .Values.applicants.livenessProbe.periodSeconds }}
+              port: {{ .Values.applicants.containerPort | default 80 }}
+            initialDelaySeconds: {{ .Values.applicants.livenessProbe.initialDelaySeconds | default 120 }}
+            periodSeconds: {{ .Values.applicants.livenessProbe.periodSeconds | default 20 }}
 
           resources:
             requests:
-              cpu: {{ .Values.applicants.resources.requests.cpu | quote }}
-              memory: {{ .Values.applicants.resources.requests.memory | quote }}
+              cpu: {{ .Values.applicants.resources.requests.cpu | default "500m" | quote }}
+              memory: {{ .Values.applicants.resources.requests.memory | default "500Mi" | quote }}
             limits:
-              cpu: {{ .Values.applicants.resources.limits.cpu | quote }}
-              memory: {{ .Values.applicants.resources.limits.memory | quote }}
+              cpu: {{ .Values.applicants.resources.limits.cpu | default "1" | quote }}
+              memory: {{ .Values.applicants.resources.limits.memory | default "1500Mi" | quote }}
+
+{{- end }}

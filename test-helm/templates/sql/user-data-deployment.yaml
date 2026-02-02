@@ -1,4 +1,8 @@
 {{- if .Values.userData.enabled }}
+
+{{- $images := .Values.images | default dict -}}
+{{- $userDataImg := get $images "userData" | default dict -}}
+
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -19,8 +23,8 @@ spec:
     spec:
       containers:
         - name: user-data
-          image: "{{ .Values.images.userData.repository }}:{{ .Values.images.userData.tag }}"
-          imagePullPolicy: {{ .Values.images.pullPolicy | default "Always" }}
+          image: "{{ $userDataImg.repository | default "redis" }}:{{ $userDataImg.tag | default "7-alpine" }}"
+          imagePullPolicy: {{ $images.pullPolicy | default "Always" }}
 
           securityContext:
             runAsUser: {{ .Values.userData.securityContext.runAsUser | default 0 }}
@@ -73,4 +77,5 @@ spec:
         resources:
           requests:
             storage: {{ .Values.userData.persistence.size | default "5Gi" | quote }}
+
 {{- end }}
